@@ -1,0 +1,21 @@
+# Рабочие артефакты процесса — не для репозитория
+dev-report/
+.playwright-cli/
+logs/
+work/
+tasks/
+
+# Отклонённый прототип (заменён piracy-radar-prototype.html)
+dashboard/
+
+# Рабочие материалы и промпты (не нужны для запуска)
+*-prompt.md
+*-prompt1.md
+prompt-*.txt
+mcp-cinema-architecture.md
+
+# macOS / editors
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Пиратский радар — прототип</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--line:#e4e7ec;--tx:#0f172a;--mu:#64748b;--ac:#4f46e5;--ac-bg:#eef2ff;--pir:#dc2626;--pir-bg:#fee2e2;--leg:#16a34a;--leg-bg:#dcfce7;--inf:#94a3b8;--inf-bg:#e2e8f0;--pos:#0f172a;--flag:#d97706;--flag-bg:#fef3c7;--warn-bg:#fff7ed;--sh:0 1px 2px rgba(15,23,42,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#131a2e;--line:#243049;--tx:#e6eaf3;--mu:#94a3b8;--ac:#818cf8;--ac-bg:#1e2547;--pir:#f87171;--pir-bg:#4a1d24;--leg:#4ade80;--leg-bg:#143325;--inf:#64748b;--inf-bg:#243049;--pos:#f8fafc;--flag:#fbbf24;--flag-bg:#3a2e10;--warn-bg:#2a2012}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+small,.mu{color:var(--mu)}
+h1{font-size:22px;margin:0}h2{font-size:15px;margin:0}h3{margin:0;font-size:16px}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;padding:10px 24px}
+.brand{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+.brand i{width:22px;height:22px;border-radius:50%;border:2px solid var(--ac);position:relative;display:inline-block}
+.brand i:after{content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:var(--pir)}
+.nav{display:flex;gap:4px}
+.nav button{background:none;border:0;padding:7px 12px;border-radius:8px;cursor:pointer;color:var(--mu);font-weight:600}
+.nav button.on{background:var(--ac-bg);color:var(--ac)}
+.sp{flex:1}
+.demo{font-size:12px;color:var(--mu);background:var(--inf-bg);padding:3px 8px;border-radius:99px}
+main{max-width:1320px;margin:0 auto;padding:20px 24px 80px}
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--ac)}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.pri:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn.ghost{background:none;border-color:transparent;color:var(--mu)}
+.btn.ghost:hover{color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:16px;margin-bottom:16px}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.pagehead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.pagehead .sp{flex:1}
+.filters{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:12px 16px}
+.frow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lbl{font-size:12px;color:var(--mu);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:none;border:0;padding:5px 12px;cursor:pointer;font-weight:600;color:var(--mu)}
+.seg button.on{background:var(--ac);color:#fff}
+.chip{border:1px solid var(--line);background:var(--card);padding:4px 11px;border-radius:99px;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--ac-bg);border-color:var(--ac);color:var(--ac)}
+.chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.fixed{font-size:12.5px;background:var(--inf-bg);padding:4px 10px;border-radius:8px;color:var(--mu)}
+.chk{display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--sh)}
+.kpi .k{font-size:12px;color:var(--mu);font-weight:600}
+.kpi .v{font-size:26px;font-weight:700;margin:2px 0}
+.kpi .s{font-size:12.5px;color:var(--mu)}
+.kpi.warn{background:var(--warn-bg);border-color:var(--flag)}
+.neg{color:var(--pir);font-weight:600}.pos{color:var(--leg);font-weight:600}
+select.sel{border:1px solid var(--line);background:var(--card);color:var(--tx);border-radius:8px;padding:5px 8px;font:inherit;max-width:190px}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 8px}
+.lg{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:3px 10px;cursor:pointer;font-size:12.5px;font-weight:600}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.lg.off{opacity:.4;text-decoration:line-through}
+#chartwrap{position:relative;min-height:340px}
+#chartwrap svg{display:block}
+.grid{stroke:var(--line);stroke-width:1}
+.ax{fill:var(--mu);font-size:11px}.ax2{fill:var(--mu);font-size:10.5px;font-weight:600}
+.a-pir{fill:var(--pir);opacity:.88}.a-leg{fill:var(--leg);opacity:.72}.a-inf{fill:var(--inf);opacity:.5}
+.pos-l{fill:none;stroke:var(--pos);stroke-width:2.4}.pos-h{fill:none;stroke:var(--card);stroke-width:5.5;opacity:.9}
+.pos-d{fill:var(--pos);stroke:var(--card);stroke-width:1.5}
+.flag circle{fill:var(--flag)}.flag text{font-size:10px;font-weight:700;fill:#1f1300}
+.flag-l{stroke:var(--flag);stroke-width:1.6;stroke-dasharray:4 3}
+.xh{stroke:var(--mu);stroke-width:1;stroke-dasharray:2 2}
+.tip{display:none;position:absolute;z-index:5;background:var(--card);border:1px solid var(--line);box-shadow:0 6px 24px rgba(15,23,42,.18);border-radius:10px;padding:9px 11px;font-size:12.5px;pointer-events:none;min-width:190px;max-width:290px}
+.tip b{display:block;margin-bottom:4px}.tip .r{display:flex;justify-content:space-between;gap:14px}
+.tip .fl{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);color:var(--flag);font-weight:600}
+.note{font-size:12.5px;color:var(--mu);margin-top:8px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--mu);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr[data-open]{cursor:pointer}tbody tr[data-open]:hover{background:var(--ac-bg)}
+tr.off td:not(.keep){opacity:.55}
+tbody tr[data-open] td:first-child{min-width:190px}
+td{padding:10px 8px}
+select.sel{max-width:160px}
+.ttl{display:flex;gap:10px;align-items:center}
+.ttl b{display:block}.ttl small{display:block}
+.poster{width:34px;height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex:none}
+.linkb{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:inherit;font-weight:700}
+.linkb:hover{color:var(--ac)}
+.sbar{display:flex;height:10px;border-radius:5px;overflow:hidden;min-width:130px;background:var(--inf-bg)}
+.sbar i{display:block;height:100%}
+.sn{font-size:12px;margin-top:3px;white-space:nowrap}
+.bd{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap}
+.bd-pirate{background:var(--pir-bg);color:var(--pir)}.bd-legal{background:var(--leg-bg);color:var(--leg)}.bd-info{background:var(--inf-bg);color:var(--mu)}
+.bd-new{background:var(--ac-bg);color:var(--ac)}.bd-pack{background:var(--flag-bg);color:var(--flag)}
+.bd-good{background:var(--leg-bg);color:var(--leg)}.bd-bad{background:var(--pir-bg);color:var(--pir)}.bd-flat,.bd-wait,.bd-nodata{background:var(--inf-bg);color:var(--mu)}
+.switch{position:relative;display:inline-block;width:38px;height:22px;vertical-align:middle}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch i{position:absolute;inset:0;background:#cbd5e1;border-radius:22px;transition:.15s;cursor:pointer}
+.switch i:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.switch input:checked+i{background:var(--leg)}
+.switch input:checked+i:before{transform:translateX(16px)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tabs button{background:none;border:0;padding:9px 14px;cursor:pointer;font-weight:600;color:var(--mu);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button.on{color:var(--ac);border-color:var(--ac)}
+.banner{background:var(--warn-bg);border:1px solid var(--flag);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.banner span{flex:1}
+.selbar{position:sticky;bottom:12px;background:var(--card);border:1px solid var(--ac);border-radius:12px;box-shadow:0 8px 28px rgba(15,23,42,.2);padding:10px 14px;display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.selbar .sp{flex:1}
+.mv{font-weight:700;font-size:12px;white-space:nowrap}.mv.up{color:var(--pir)}.mv.dn{color:var(--leg)}.mv.nt{color:var(--mu)}
+.url{font-size:12px;color:var(--mu);word-break:break-all}
+.empty{padding:28px;text-align:center;color:var(--mu)}
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--card);border-radius:14px;width:min(760px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mb{padding:18px 20px;overflow:auto}
+.mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.x{background:none;border:0;font-size:22px;cursor:pointer;color:var(--mu);line-height:1}
+.inp{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}
+.inp:focus{outline:2px solid var(--ac);outline-offset:0}
+.err{color:var(--pir);font-weight:600;margin-top:6px;min-height:20px}
+.hint{font-size:13px;color:var(--mu);margin-top:6px}
+.ex{margin-top:12px;font-size:13px}.ex a{color:var(--ac);cursor:pointer;margin-right:10px;text-decoration:underline}
+.found{display:flex;gap:16px;align-items:flex-start}
+.found .poster{width:64px;height:88px;font-size:18px}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;margin-top:10px}
+.kv dt{color:var(--mu)}.kv dd{margin:0;font-weight:600}
+.pill{display:inline-block;background:var(--inf-bg);padding:2px 9px;border-radius:99px;font-size:12.5px;margin:2px 4px 2px 0;font-weight:600}
+textarea.txt{width:100%;min-height:290px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--tx);resize:vertical}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#0f172a;color:#fff;padding:10px 16px;border-radius:10px;opacity:0;transition:.2s;z-index:80;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.catrow{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.catrow .inp{flex:1}
+@media(max-width:760px){main{padding:14px 12px 80px}.top{padding:10px 12px;gap:10px;flex-wrap:wrap}.kv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><i></i>Пиратский радар</div>
+  <nav class="nav">
+    <button data-act="nav" data-v="dash" class="on">Дашборд</button>
+    <button data-act="nav" data-v="packs">Пакеты жалоб</button>
+  </nav>
+  <div class="sp"></div>
+  <span class="demo">Прототип · демо-данные</span>
+  <button class="btn" data-act="aiopen" id="aibtn">✨ AI</button>
+  <button class="btn pri" data-act="addopen">+ Добавить тайтл</button>
+</header>
+<main id="app"></main>
+<div id="modal"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+'use strict';
+/* ========= утилиты ========= */
+const DAYS=30;
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const dayDate=i=>{const d=new Date(TODAY);d.setDate(d.getDate()-(DAYS-1-i));return d};
+const pad=n=>String(n).padStart(2,'0');
+const fd=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1);
+const fdi=i=>fd(dayDate(i));
+const WD=['вс','пн','вт','ср','чт','пт','сб'];
+const fdl=i=>{const d=dayDate(i);return WD[d.getDay()]+', '+fd(d)};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const pl=(n,f)=>{n=Math.abs(n);const a=n%10,b=n%100;return a==1&&b!=11?f[0]:(a>=2&&a<=4&&(b<10||b>=20))?f[1]:f[2]};
+const ENG={ya:'Яндекс',g:'Google'};
+const lastIdx=a=>{for(let i=a.length-1;i>=0;i--)if(a[i]!=null)return i;return -1};
+const CATCOL=['#6366f1','#f59e0b','#10b981','#ec4899','#06b6d4','#8b5cf6'];
+
+/* ========= справочники демо ========= */
+const PIRATES=['filmozavr-hd','onlayn-kinoteka','besplatno-kino24','seriali-sezon','kinopolis-free','smotri-vse-serii','hd-kinozal-live','serial-bar','kinoman-online','filmy-2026-hd','kino-fan-free','seriali-hd-tut'].map(s=>s+'.example');
+const SUF=['smotret-onlayn','vse-serii-hd','2026-besplatno','film-hd'];
+const LEGAL=[['kion.ru','KION'],['okko.tv','Okko'],['ivi.ru','ivi'],['premier.one','PREMIER']];
+const INFO=[['ru.wikipedia.org','Википедия'],['kinopoisk.ru','Кинопоиск'],['afisha.ru','Афиша'],['film.ru','Film.ru'],['gazeta.ru','Газета.Ru']];
+const NEWT=[
+ {name:'Тёмная вода',orig:'Dark Water',year:2026,type:'Сериал',slug:'temnaya-voda',alts:['Тёмная вода сериал','Dark Water 2026','Temnaya voda']},
+ {name:'Город без снов',orig:'City Without Dreams',year:2026,type:'Сериал',slug:'gorod-bez-snov',alts:['Город без снов 1 сезон','City Without Dreams']},
+ {name:'Пятый угол',orig:'The Fifth Corner',year:2026,type:'Фильм',slug:'pyatyj-ugol',alts:['Пятый угол фильм','The Fifth Corner']},
+ {name:'Бумажные ключи',orig:'Paper Keys',year:2025,type:'Сериал',slug:'bumazhnye-klyuchi',alts:['Бумажные ключи сериал','Paper Keys']},
+ {name:'Дальний свет',orig:'High Beam',year:2026,type:'Фильм',slug:'dalnij-svet',alts:['Дальний свет фильм','High Beam 2026']},
+ {name:'Остров зимы',orig:'Winter Island',year:2026,type:'Сериал',slug:'ostrov-zimy',alts:['Остров зимы сериал','Winter Island']}
+];
+const TITLES=[
+ {id:'p1',name:'Ночная смена',orig:'Night Shift',slug:'nochnaya-smena',year:2026,type:'Сериал',kp:5012345,cat:'orig',active:true,seed:11,cfg:{base:1.2,amp:5,tau:4,relief:3,rel:[3,10,17,24]},bd:[5,12,18,25]},
+ {id:'p2',name:'Северный ветер',orig:'North Wind',slug:'severnyj-veter',year:2026,type:'Сериал',kp:5023456,cat:'orig',active:true,seed:23,cfg:{base:1,amp:5.5,tau:4,relief:3,rel:[17,24],from:15},bd:[19,26]},
+ {id:'p3',name:'Тихий омут',orig:'Still Waters',slug:'tihij-omut',year:2025,type:'Сериал',kp:5034567,cat:'orig',active:false,seed:37,cfg:{base:1,amp:5,tau:4,relief:3,rel:[3,10,17],to:17},bd:[5,12]},
+ {id:'p4',name:'Холодный август',orig:'Cold August',slug:'holodnyj-avgust',year:2026,type:'Фильм',kp:5045678,cat:'aa',active:true,seed:41,cfg:{base:2.4,amp:6,tau:8,relief:2.5,rel:[8]},bd:[10,13,20]},
+ {id:'p5',name:'Седьмой этаж',orig:'Seventh Floor',slug:'sedmoj-etazh',year:2026,type:'Фильм',kp:5056789,cat:'aa',active:true,seed:53,cfg:{base:1,amp:6,tau:7,relief:2.5,rel:[20]},bd:[22,26]},
+ {id:'p6',name:'Последний рейс',orig:'Last Flight',slug:'poslednij-rejs',year:2025,type:'Фильм',kp:5067890,cat:'aa',active:false,seed:67,cfg:{base:1.5,amp:5,tau:7,relief:2.5,rel:[2],to:20},bd:[4,9]},
+ {id:'p7',name:'Чужой берег',orig:'Foreign Shore',slug:'chuzhoj-bereg',year:2023,type:'Фильм',kp:5078901,cat:'lib',active:true,seed:71,cfg:{base:3,amp:0,tau:5,relief:2,rel:[]},bd:[6,21]},
+ {id:'p8',name:'Железный путь',orig:'Iron Road',slug:'zheleznyj-put',year:2022,type:'Сериал',kp:5089012,cat:'lib',active:false,seed:83,cfg:{base:2,amp:0,tau:5,relief:2,rel:[],to:9},bd:[]}
+];
+
+/* ========= генерация демо-данных ========= */
+const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
+const hosterOf=dom=>'Хостер '+'ABC'[hash(dom)%3];
+const pirateUrl=(pr,j)=>`https://${PIRATES[(pr.seed+j)%PIRATES.length]}/${pr.slug}-${SUF[j%4]}`;
+const kpUrl=pr=>pr.kpUrl||`https://www.kinopoisk.ru/${pr.type==='Фильм'?'film':'series'}/${pr.kp}/`;
+
+function makeSnap(pr,ek,p,i,pos,day){
+  const rng=mulberry32(pr.seed*1000+(ek==='g'?500:0)+day);
+  const inTop=pos<=10,others=inTop?9:10;
+  p=Math.min(p,others);i=Math.min(i,others-p);
+  const nl=others-p-i,arr=[];
+  for(let j=0;j<p;j++){const u=pirateUrl(pr,j);arr.push({cls:'pirate',url:u,domain:u.replace('https://','').split('/')[0],title:`Смотреть ${pr.name} онлайн бесплатно в хорошем качестве HD`,sc:((pr.seed*31+j*17)%97)/97+rng()*.22})}
+  for(let j=0;j<nl;j++){const L=LEGAL[(pr.seed+j)%LEGAL.length],d=L[0];arr.push({cls:'legal',url:`https://${d}/${pr.slug}${j>=LEGAL.length?'-'+j:''}`,domain:d,title:`${pr.name} — смотреть онлайн в ${L[1]}`,sc:((pr.seed*31+j*17+40)%97)/97+rng()*.22})}
+  for(let j=0;j<i;j++){const I=INFO[(pr.seed+j)%INFO.length],d=I[0];arr.push({cls:'info',url:d==='ru.wikipedia.org'?`https://${d}/wiki/${pr.slug}`:`https://${d}/${pr.slug}`,domain:d,title:d==='ru.wikipedia.org'?`${pr.name} — Википедия`:`${pr.name}: описание, актёры, дата выхода — ${I[1]}`,sc:((pr.seed*31+j*17+70)%97)/97+rng()*.22})}
+  arr.sort((a,b)=>a.sc-b.sc);
+  if(inTop)arr.splice(pos-1,0,{cls:'legal',own:true,url:`https://wink.ru/${pr.slug}`,domain:'wink.ru',title:`${pr.name} — смотреть онлайн на Wink`});
+  return arr.map((x,k)=>({cls:x.cls,own:!!x.own,url:x.url,domain:x.domain,title:x.title,pos:k+1}));
+}
+function countSnap(snap){let p=0,i=0,pos=11;snap.forEach(x=>{if(x.cls==='pirate')p++;else if(x.cls==='info')i++;if(x.own)pos=x.pos});return{p,i,pos}}
+
+function genSeries(pr,ek){
+  const rng=mulberry32(pr.seed*7+(ek==='g'?333:0)),c=pr.cfg,p=[],i=[],pos=[];
+  for(let d=0;d<DAYS;d++){
+    if((c.from!=null&&d<c.from)||(c.to!=null&&d>c.to)){p.push(null);i.push(null);pos.push(null);continue}
+    let bump=0;c.rel.forEach(r=>{if(d>=r)bump+=c.amp*Math.exp(-(d-r)/c.tau)});
+    let rel=0;pr.bd.forEach(b=>{if(d>=b+2)rel+=c.relief*Math.exp(-(d-b-2)/3.5)});
+    let pv=clamp(Math.round(c.base+bump-rel+(rng()-.5)*1.8+(ek==='g'?-.5:.3)),0,8);
+    let iv=rng()<.5?1:2;
+    let ps=clamp(Math.round(1.4+pv*.55+(rng()-.5)*2),1,10);
+    if(pv>=7&&rng()<.4)ps=11;
+    const others=ps<=10?9:10;pv=Math.min(pv,others);iv=Math.min(iv,others-pv);
+    p.push(pv);i.push(iv);pos.push(ps);
+  }
+  return{p,i,pos};
+}
+function buildProject(t){
+  const pr=Object.assign({},t,{eng:{}});
+  ['ya','g'].forEach(ek=>{
+    const s=genSeries(pr,ek),li=lastIdx(s.p);
+    let pi=-1;for(let d=li-1;d>=0;d--)if(s.p[d]!=null){pi=d;break}
+    s.snap=makeSnap(pr,ek,s.p[li],s.i[li],s.pos[li],li);
+    s.prev=pi>=0?makeSnap(pr,ek,s.p[pi],s.i[pi],s.pos[pi],pi):null;
+    pr.eng[ek]=s;
+  });
+  return pr;
+}
+function mkBatches(pr){
+  const rng=mulberry32(pr.seed*13),ya=pr.eng.ya,g=pr.eng.g;
+  const maxP=Math.max(ya.p[lastIdx(ya.p)]||0,g.p[lastIdx(g.p)]||0);
+  return pr.bd.map((b,ix)=>{
+    const n=5+Math.floor(rng()*9),last=ix===pr.bd.length-1,k=last?Math.min(n,Math.max(0,maxP-2)):0,urls=[];
+    for(let j=0;j<k;j++)urls.push(pirateUrl(pr,j));
+    for(let x=0;urls.length<n;x++)urls.push(`https://${PIRATES[(pr.seed+8+x)%PIRATES.length]}/${pr.slug}-old-${b}-${x}`);
+    return{pid:pr.id,day:b,n,urls,eng:'ya'};
+  });
+}
+
+/* ========= состояние ========= */
+const S={view:'dash',pid:null,tab:'overview',engine:'ya',period:30,
+  cats:[{id:'orig',name:'Ориги Wink'},{id:'aa',name:'A / A+ тайтлы'},{id:'lib',name:'Библиотека'}],
+  catF:new Set(),onlyActive:false,scope:'all',sort:'pirate',
+  vis:{pirate:true,legal:true,info:true,pos:true,flags:true},
+  sel:new Set(),projects:[],batches:[],nextBatch:1,modal:null};
+S.projects=TITLES.map(buildProject);
+(function(){let all=[];S.projects.forEach(pr=>{all=all.concat(mkBatches(pr))});all.sort((a,b)=>a.day-b.day||a.pid.localeCompare(b.pid));all.forEach((b,i)=>b.id=i+1);S.batches=all;S.nextBatch=all.length+1})();
+
+const proj=id=>S.projects.find(p=>p.id===id);
+const catName=pr=>{const c=S.cats.find(c=>c.id===pr.cat);return c?c.name:'Без категории'};
+const catColor=id=>{const i=S.cats.findIndex(c=>c.id===id);return i<0?'#94a3b8':CATCOL[i%CATCOL.length]};
+const sentSet=pr=>{const s=new Set();S.batches.filter(b=>b.pid===pr.id).forEach(b=>b.urls.forEach(u=>s.add(u)));return s};
+const batchOfUrl=(pr,u)=>S.batches.filter(b=>b.pid===pr.id&&b.urls.includes(u)).slice(-1)[0];
+const batchItems=b=>b.items||b.urls.map(u=>({url:u,domain:u.replace(/^https?:\/\//,'').split('/')[0],pos:null}));
+const initials=n=>n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const posterBg=pr=>`background:linear-gradient(135deg,hsl(${hash(pr.slug)%360} 55% 45%),hsl(${(hash(pr.slug)+40)%360} 60% 32%))`;
+const poster=(pr,cls='')=>`<span class="poster ${cls}" style="${posterBg(pr)}">${esc(initials(pr.name))}</span>`;
+
+function filtered(){return S.projects.filter(p=>(!S.catF.size||S.catF.has(p.cat||'none'))&&(!S.onlyActive||p.active))}
+function pm(pr){
+  const e=pr.eng[S.engine],li=lastIdx(e.p);if(li<0)return null;
+  let pi=-1;for(let d=li-1;d>=0;d--)if(e.p[d]!=null){pi=d;break}
+  const p=e.p[li]*10,i=e.i[li]*10,sent=sentSet(pr);
+  return{li,p,i,l:100-p-i,pos:e.pos[li],dp:pi>=0?p-e.p[pi]*10:null,dpos:pi>=0?e.pos[li]-e.pos[pi]:null,
+    nu:e.snap.filter(x=>x.cls==='pirate'&&!sent.has(x.url)).length,
+    sentN:S.batches.filter(b=>b.pid===pr.id).reduce((s,b)=>s+b.n,0)};
+}
+function effect(b){
+  const pr=proj(b.pid),a=pr.eng[S.engine].p;
+  const avg=(f,t)=>{const v=[];for(let d=f;d<=t;d++)if(d>=0&&d<DAYS&&a[d]!=null)v.push(a[d]*10);return v};
+  const bv=avg(b.day-3,b.day-1),av=avg(b.day+3,b.day+5);
+  const before=bv.length?mean(bv):null,after=av.length>=2?mean(av):null;
+  let delta=null,verdict='wait';
+  if(before==null)verdict='nodata';
+  else if(after!=null){delta=after-before;verdict=delta<=-10?'good':delta>=10?'bad':'flat'}
+  return{before,after,delta,verdict};
+}
+const VTXT={good:'Эффект заметен',flat:'Без заметных изменений',bad:'Пиратов стало больше',wait:'Ждём данных',nodata:'Нет данных до пакета'};
+function aggSeries(prs,ek,from){
+  const out=[];
+  for(let d=from;d<DAYS;d++){
+    const P=[],I=[],L=[],Q=[];
+    prs.forEach(pr=>{const e=pr.eng[ek];if(e.p[d]!=null){P.push(e.p[d]*10);I.push(e.i[d]*10);L.push(100-e.p[d]*10-e.i[d]*10);Q.push(e.pos[d])}});
+    out.push(P.length?{d,p:mean(P),i:mean(I),l:mean(L),pos:mean(Q),n:P.length}:{d,p:null});
+  }
+  return out;
+}
+
+/* ========= график ========= */
+let chartSpec=null,ctx=null;
+function chartSvg(pts,bmap,W){
+  const H=340,m={l:44,r:58,t:38,b:30},iw=W-m.l-m.r,ih=H-m.t-m.b,n=pts.length;
+  const X=k=>n>1?m.l+iw*k/(n-1):m.l+iw/2,Y=v=>m.t+ih*(1-v/100),YP=v=>m.t+ih*((v-1)/10);
+  const bw=n>1?Math.max(8,Math.min(28,iw/(n-1)*.6)):28;
+  let g='';
+  [0,25,50,75,100].forEach(v=>{g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end" class="ax">${v}%</text>`});
+  const segs=[];let cur=null;
+  pts.forEach((q,k)=>{if(q.p==null)cur=null;else{if(!cur){cur=[];segs.push(cur)}cur.push(k)}});
+  [['pirate','pir',q=>0,q=>q.p],['legal','leg',q=>q.p,q=>q.p+q.l],['info','inf',q=>q.p+q.l,q=>100]].forEach(([key,c,lo,hi])=>{
+    if(!S.vis[key])return;
+    segs.forEach(sg=>{
+      if(sg.length===1){const q=pts[sg[0]];g+=`<rect x="${X(sg[0])-bw/2}" y="${Y(hi(q))}" width="${bw}" height="${Math.max(0,Y(lo(q))-Y(hi(q)))}" class="a-${c}"/>`}
+      else{const top=sg.map(k=>X(k).toFixed(1)+','+Y(hi(pts[k])).toFixed(1)),bot=sg.slice().reverse().map(k=>X(k).toFixed(1)+','+Y(lo(pts[k])).toFixed(1));g+=`<polygon points="${top.concat(bot).join(' ')}" class="a-${c}"/>`}
+    });
+  });
+  const step=Math.ceil(n/8);
+  pts.forEach((q,k)=>{if((n-1-k)%step===0)g+=`<text x="${X(k)}" y="${H-10}" text-anchor="middle" class="ax">${fdi(q.d)}</text>`});
+  if(S.vis.pos){
+    [1,3,5,7,10,11].forEach(v=>{g+=`<text x="${W-m.r+8}" y="${YP(v)+4}" class="ax">${v===11?'вне':v}</text>`});
+    g+=`<text x="${W-m.r+18}" y="${m.t-4}" class="ax2">позиция</text>`;
+    segs.forEach(sg=>{
+      const d=sg.map((k,ix)=>(ix?'L':'M')+X(k).toFixed(1)+','+YP(pts[k].pos).toFixed(1)).join(' ');
+      if(sg.length>1)g+=`<path d="${d}" class="pos-h"/><path d="${d}" class="pos-l"/>`;
+      sg.forEach(k=>{g+=`<circle cx="${X(k)}" cy="${YP(pts[k].pos)}" r="3.3" class="pos-d"/>`});
+    });
+  }
+  if(S.vis.flags)Object.keys(bmap).forEach(dk=>{
+    const k=(+dk)-pts[0].d;if(k<0||k>=n)return;
+    const x=X(k),tot=bmap[dk].reduce((s,b)=>s+b.n,0);
+    g+=`<line x1="${x}" x2="${x}" y1="${m.t-8}" y2="${m.t+ih}" class="flag-l"/><g class="flag"><circle cx="${x}" cy="${m.t-20}" r="10"/><text x="${x}" y="${m.t-16.5}" text-anchor="middle">${tot}</text></g>`;
+  });
+  g+=`<line id="xh" class="xh" x1="0" x2="0" y1="${m.t}" y2="${m.t+ih}" style="display:none"/><rect id="hit" x="${m.l}" y="${m.t-32}" width="${iw}" height="${ih+32}" fill="transparent"/>`;
+  ctx={pts,bmap,m,iw,n,X,W};
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="График структуры выдачи">${g}</svg>`;
+}
+function tipHTML(k){
+  const q=ctx.pts[k],bs=ctx.bmap[q.d]||[];
+  let h=`<b>${fdl(q.d)}</b>`;
+  if(q.p==null)h+=`<div class="mu">Мониторинг не вёлся</div>`;
+  else{
+    h+=`<div class="r"><span style="color:var(--pir)">● Пиратская</span><b style="margin:0">${Math.round(q.p)}%</b></div>`;
+    h+=`<div class="r"><span style="color:var(--leg)">● Легальная</span><b style="margin:0">${Math.round(q.l)}%</b></div>`;
+    h+=`<div class="r"><span style="color:var(--mu)">● Информационная</span><b style="margin:0">${Math.round(q.i)}%</b></div>`;
+    h+=`<div class="r"><span>Позиция Wink</span><b style="margin:0">${q.pos>=10.5?'вне топ-10':q.pos.toFixed(1).replace('.0','')}</b></div>`;
+    if(q.n>1)h+=`<div class="mu" style="margin-top:3px">среднее по ${q.n} ${pl(q.n,['проекту','проектам','проектам'])}</div>`;
+  }
+  bs.forEach(b=>{h+=`<div class="fl">⚑ Передан юристам: пакет №${b.id} · ${b.n} URL<br><span class="mu" style="font-weight:400">${esc(proj(b.pid).name)}</span></div>`});
+  return h;
+}
+function drawChart(){
+  const wrap=document.getElementById('chartwrap');if(!wrap||!chartSpec)return;
+  const W=Math.max(300,Math.floor(wrap.clientWidth)),from=DAYS-S.period;
+  const pts=aggSeries(chartSpec.prs,S.engine,from),bmap={};
+  S.batches.filter(b=>chartSpec.prs.some(p=>p.id===b.pid)&&b.day>=from).forEach(b=>{(bmap[b.day]=bmap[b.day]||[]).push(b)});
+  wrap.innerHTML=chartSvg(pts,bmap,W)+'<div class="tip"></div>';
+  const svg=wrap.querySelector('svg'),hit=svg.querySelector('#hit'),xh=svg.querySelector('#xh'),tip=wrap.querySelector('.tip');
+  hit.addEventListener('mousemove',e=>{
+    const r=svg.getBoundingClientRect(),sc=r.width/ctx.W,x=(e.clientX-r.left)/sc;
+    let k=ctx.n>1?Math.round((x-ctx.m.l)/ctx.iw*(ctx.n-1)):0;k=clamp(k,0,ctx.n-1);
+    const px=ctx.X(k);xh.setAttribute('x1',px);xh.setAttribute('x2',px);xh.style.display='';
+    tip.innerHTML=tipHTML(k);tip.style.display='block';
+    const tw=tip.offsetWidth;let left=px*sc+14;if(left+tw>r.width)left=px*sc-tw-14;
+    tip.style.left=Math.max(0,left)+'px';tip.style.top='44px';
+  });
+  hit.addEventListener('mouseleave',()=>{xh.style.display='none';tip.style.display='none'});
+}
+
+/* ========= общие блоки ========= */
+const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${String(o.v)===String(cur)?'on':''}" data-act="${act}" data-v="${o.v}">${o.t}</button>`).join('')}</div>`;
+const dfmt=(d,unit)=>{if(d==null)return '<span class="mu">нет данных для сравнения</span>';const r=Math.round(d*10)/10;if(Math.abs(r)<.05)return '<span class="mu">без изменений</span>';const up=r>0;return `<span class="${up?'neg':'pos'}">${up?'▲':'▼'} ${Math.abs(r)}${unit}</span>`};
+function legendHTML(){
+  const L=[['pirate','var(--pir)','Пиратская'],['legal','var(--leg)','Легальная'],['info','var(--inf)','Информационная (новости, обзоры, вики)'],['pos','var(--pos)','Позиция Wink'],['flags','var(--flag)','Передача пакета юристам']];
+  return `<div class="legend">${L.map(([k,c,t])=>`<button class="lg ${S.vis[k]?'':'off'}" data-act="vis" data-v="${k}"><i style="background:${c}"></i>${t}</button>`).join('')}</div>`;
+}
+function kpiHTML(set){
+  const act=set.filter(p=>p.active),base=act.length?act:set,rows=base.map(pm).filter(Boolean);
+  const m=a=>a.length?mean(a):null;
+  const P=m(rows.map(r=>r.p)),L=m(rows.map(r=>r.l)),I=m(rows.map(r=>r.i));
+  const dP=m(rows.filter(r=>r.dp!=null).map(r=>r.dp)),pos=m(rows.map(r=>r.pos)),dpos=m(rows.filter(r=>r.dpos!=null).map(r=>r.dpos));
+  const from=DAYS-S.period,ids=new Set(set.map(p=>p.id)),bs=S.batches.filter(b=>ids.has(b.pid)&&b.day>=from);
+  const urls=bs.reduce((s,b)=>s+b.n,0),ef=bs.map(effect).filter(x=>['good','flat','bad'].includes(x.verdict)),good=ef.filter(x=>x.verdict==='good').length;
+  const nu=act.map(pm).filter(Boolean).reduce((s,r)=>s+r.nu,0);
+  const card=(k,v,s,c='')=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  return `<div class="kpis">
+   ${card('На мониторинге',`${act.length} <small style="font-size:15px;font-weight:600">из ${set.length}</small>`,'остальные на паузе')}
+   ${card('Пиратская выдача',P==null?'—':`<span style="color:var(--pir)">${Math.round(P)}%</span>`,`${dfmt(dP,' п.п.')} к прошлому снимку<br>легальная ${L==null?'—':Math.round(L)}% · инфо ${I==null?'—':Math.round(I)}%`)}
+   ${card('Позиция Wink',pos==null?'—':(pos>=10.5?'вне':pos.toFixed(1).replace('.0','')),`${dfmt(dpos,'')} к прошлому снимку`)}
+   ${card('Новых без пакета',nu,'пиратских URL, ещё не переданных юристам',nu?'warn':'')}
+   ${card('Жалоб отправлено',urls,`${bs.length} ${pl(bs.length,['пакет','пакета','пакетов'])} за ${S.period} дн.<br>считаем URL из переданных юристам пакетов`)}
+   ${card('Пакеты с эффектом',ef.length?`${good} <small style="font-size:15px;font-weight:600">из ${ef.length}</small>`:'—','сравнение «до / после» по пиратской выдаче')}
+  </div>`;
+}
+function effectHTML(set,limit){
+  const ids=new Set(set.map(p=>p.id)),from=DAYS-S.period;
+  let bs=S.batches.filter(b=>ids.has(b.pid)&&b.day>=from).slice().reverse();
+  const total=bs.length;if(limit)bs=bs.slice(0,limit);
+  if(!bs.length)return `<div class="empty">В выбранном периоде пакетов для юристов пока не было</div>`;
+  return `<div class="tw"><table><thead><tr><th>Пакет</th><th>Передан юристам</th><th>Проект</th><th>URL</th><th>Пираты до (3 дня)</th><th>Пираты после (дни 3–5)</th><th>Δ</th><th>Вывод</th></tr></thead><tbody>${bs.map(b=>{
+    const e=effect(b),pr=proj(b.pid);
+    return `<tr><td><button class="linkb" data-act="packopen" data-id="${b.id}">№${b.id}</button></td><td>${fdl(b.day)}</td><td>${esc(pr.name)}</td><td>${b.n}</td><td>${e.before==null?'—':Math.round(e.before)+'%'}</td><td>${e.after==null?'—':Math.round(e.after)+'%'}</td><td>${e.delta==null?'—':(e.delta>0?'+':'')+Math.round(e.delta)+' п.п.'}</td><td><span class="bd bd-${e.verdict}">${VTXT[e.verdict]}</span></td></tr>`}).join('')}</tbody></table></div>${limit&&total>limit?`<div class="note">Показаны последние ${limit} из ${total}. <button class="linkb" style="color:var(--ac)" data-act="nav" data-v="packs">Все пакеты →</button></div>`:''}`;
+}
+const EFFNOTE='Сравнение «до / после» показывает совпадение во времени, а не доказанную причину: на выдачу влияют релизы серий и работа самих поисковиков. Для строгого вывода нужен контроль (похожий тайтл без жалоб).';
+
+/* ========= экраны ========= */
+function viewDash(){
+  const fp=filtered();
+  if(S.scope!=='all'&&!fp.some(p=>p.id===S.scope))S.scope='all';
+  const set=S.scope==='all'?fp:fp.filter(p=>p.id===S.scope);
+  chartSpec={prs:set};
+  const hasNone=S.projects.some(p=>!p.cat);
+  const chips=`<button class="chip ${S.catF.size?'':'on'}" data-act="cat" data-v="all">Все</button>`+S.cats.map(c=>`<button class="chip ${S.catF.has(c.id)?'on':''}" data-act="cat" data-v="${c.id}"><i style="background:${catColor(c.id)}"></i>${esc(c.name)}</button>`).join('')+(hasNone?`<button class="chip ${S.catF.has('none')?'on':''}" data-act="cat" data-v="none"><i style="background:#94a3b8"></i>Без категории</button>`:'');
+  const rows=fp.map(pr=>({pr,m:pm(pr)}));
+  const sorters={pirate:(a,b)=>(b.m?b.m.p:-1)-(a.m?a.m.p:-1),nu:(a,b)=>(b.m?b.m.nu:-1)-(a.m?a.m.nu:-1),sent:(a,b)=>(b.m?b.m.sentN:0)-(a.m?a.m.sentN:0),name:(a,b)=>a.pr.name.localeCompare(b.pr.name,'ru')};
+  rows.sort((a,b)=>(b.pr.active-a.pr.active)||sorters[S.sort](a,b));
+  const catSel=pr=>`<select class="sel" data-chg="cat" data-id="${pr.id}"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${pr.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`;
+  const tbl=rows.length?`<div class="tw"><table><thead><tr><th>Тайтл</th><th>Категория</th><th>Мониторинг</th><th>Выдача: пираты · легальная · инфо</th><th>Позиция Wink</th><th>Пираты, Δ</th><th>Новых без пакета</th><th>Жалоб отправлено</th><th>Последний снимок</th></tr></thead><tbody>${rows.map(({pr,m})=>`<tr data-open="${pr.id}" class="${pr.active?'':'off'}">
+    <td><div class="ttl">${poster(pr)}<div><button class="linkb" data-act="open" data-id="${pr.id}">${esc(pr.name)}</button><small>${pr.type} · ${pr.year}</small></div></div></td>
+    <td class="keep">${catSel(pr)}</td>
+    <td class="keep"><label class="switch"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label> <small>${pr.active?'идёт':'пауза'}</small></td>
+    <td>${m?`<div class="sbar"><i style="width:${m.p}%;background:var(--pir)"></i><i style="width:${m.l}%;background:var(--leg)"></i><i style="width:${m.i}%;background:var(--inf)"></i></div><div class="sn"><b style="color:var(--pir)">${m.p}%</b> · ${m.l}% · ${m.i}%</div>`:'—'}</td>
+    <td>${m?(m.pos>10?'вне топ-10':m.pos):'—'}</td>
+    <td>${m&&pr.active?dfmt(m.dp,' п.п.'):'<span class="mu">—</span>'}</td>
+    <td>${m&&pr.active?(m.nu?`<span class="bd bd-pirate">${m.nu}</span>`:'<span class="mu">0</span>'):'<span class="mu">—</span>'}</td>
+    <td>${m?m.sentN:0}</td>
+    <td>${m?(pr.active?'сегодня 09:00':'<small>'+fdi(m.li)+' (остановлен)</small>'):'—'}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">Нет проектов по выбранным фильтрам</div>`;
+  return `
+  <div class="ph"><div><h1>Дашборд мониторинга</h1><small>Агрегированная картина по всем тайтлам. Юристы сюда не заходят: им уходят списки страниц и готовые тексты.</small></div><div class="frow"><button class="btn sm" data-act="aidigest" title="DeepSeek разберёт сводку и предложит действия">✨ AI-разбор</button></div></div>
+  <div class="card filters">
+    <div class="frow"><span class="lbl">Поисковик</span>${seg('eng',[{v:'ya',t:'Яндекс'},{v:'g',t:'Google'}],S.engine)}</div>
+    <div class="frow"><span class="lbl">Период</span>${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div>
+    <div class="frow"><span class="lbl">Категории</span>${chips}<button class="btn sm ghost" data-act="catsmgr">⚙ Управлять</button></div>
+    <label class="chk"><input type="checkbox" data-chg="onlyactive" ${S.onlyActive?'checked':''}> Только на мониторинге</label>
+    <span class="fixed" title="Фиксированные параметры сервиса">🔒 Регион: Москва · Топ-10</span>
+  </div>
+  ${kpiHTML(set)}
+  <div class="card">
+    <div class="ph"><div><h2>Структура выдачи: пиратская / легальная / информационная</h2><small>${S.scope==='all'?`Среднее по проектам: ${set.length}`:esc(set[0]?set[0].name:'')} · ${ENG[S.engine]} · Москва, топ-10</small></div>
+      <div class="frow"><span class="lbl">Показать</span><select class="sel" data-chg="scope"><option value="all">Все проекты (по фильтру)</option>${fp.map(p=>`<option value="${p.id}" ${S.scope===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div></div>
+    ${set.length?legendHTML()+'<div id="chartwrap"></div>':'<div class="empty">Нет данных для графика</div>'}
+    <div class="note">⚑ Флажок — дата передачи пакета юристам (число — URL в пакете). Линия — позиция Wink в топ-10 (1 — выше всего). Наведите на график, чтобы увидеть значения за день.</div>
+  </div>
+  <div class="card"><div class="ph"><div><h2>Есть ли эффект от передачи пакетов юристам</h2><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div></div>${effectHTML(set,6)}<div class="note">${EFFNOTE}</div></div>
+  <div class="card"><div class="ph"><h2>Проекты (${rows.length})</h2><div class="frow"><span class="lbl">Сортировка</span><select class="sel" data-chg="sort">${[['pirate','По доле пиратов'],['nu','По новым без пакета'],['sent','По жалобам'],['name','По названию']].map(([v,t])=>`<option value="${v}" ${S.sort===v?'selected':''}>${t}</option>`).join('')}</select></div></div>${tbl}
+  <div class="note">Тумблер включает и выключает мониторинг тайтла: для оригиналов его включают на время релиза серий. Клик по строке открывает страницу тайтла.</div></div>`;
+}
+
+function viewProject(){
+  const pr=proj(S.pid);if(!pr){S.view='dash';return viewDash()}
+  chartSpec={prs:[pr]};
+  const m=pm(pr),e=pr.eng[S.engine];
+  const head=`<div class="pagehead"><button class="btn ghost" data-act="back">← Все проекты</button></div>
+  <div class="ph"><div class="ttl">${poster(pr,'')}<div><h1>${esc(pr.name)}</h1><small>${esc(pr.orig||'')} · ${pr.type} · ${pr.year} · <a href="${esc(kpUrl(pr))}" target="_blank" rel="noopener" style="color:var(--ac)">Кинопоиск ↗</a></small></div></div>
+    <div class="frow"><span class="lbl">Категория</span><select class="sel" data-chg="cat" data-id="${pr.id}"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${pr.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <span class="lbl" style="margin-left:10px">Мониторинг</span><label class="switch"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label></div></div>
+  ${pr.active?'':`<div class="banner"><span><b>Мониторинг выключен.</b> Данные не собираются${m?', последний снимок от '+fdi(m.li):''}. Для оригиналов его включают на время релиза серий.</span><button class="btn sm pri" data-act="enable" data-id="${pr.id}">Включить мониторинг</button></div>`}
+  <div class="card filters"><div class="frow"><span class="lbl">Поисковик</span>${seg('eng',[{v:'ya',t:'Яндекс'},{v:'g',t:'Google'}],S.engine)}</div>
+    <div class="frow"><span class="lbl">Период</span>${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div><span class="fixed">🔒 Регион: Москва · Топ-10</span></div>
+  ${kpiHTML([pr])}
+  <div class="tabs">${[['overview','Динамика'],['serp','Выдача сейчас'],['packs','Пакеты для юристов']].map(([v,t])=>`<button class="${S.tab===v?'on':''}" data-act="tab" data-v="${v}">${t}${v==='packs'?' ('+S.batches.filter(b=>b.pid===pr.id).length+')':''}</button>`).join('')}</div>`;
+  if(S.tab==='overview')return head+`<div class="card"><div class="ph"><div><h2>Структура выдачи по тайтлу</h2><small>${ENG[S.engine]} · Москва, топ-10</small></div><div class="frow"><button class="btn sm" data-act="aidigest" title="DeepSeek разберёт динамику тайтла">✨ AI-разбор</button></div></div>${legendHTML()}<div id="chartwrap"></div>
+    ${m&&m.li===DAYS-1&&lastIdx(e.p.slice(0,DAYS-1))<0?'<div class="note">Первый снимок получен сегодня — история будет накапливаться по одному снимку в день.</div>':''}
+    <div class="note">⚑ Флажок — дата передачи пакета юристам. Линия — позиция Wink.</div></div>
+    <div class="card"><div class="ph"><div><h2>Эффект от передачи пакетов</h2><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div></div>${effectHTML([pr],0)}<div class="note">${EFFNOTE}</div></div>`;
+  if(S.tab==='serp')return head+serpHTML(pr);
+  return head+packsTable(S.batches.filter(b=>b.pid===pr.id).slice().reverse(),false);
+}
+
+function serpHTML(pr){
+  const e=pr.eng[S.engine],snap=e.snap,prev=e.prev,sent=sentSet(pr),m=pm(pr);
+  const prevMap=new Map((prev||[]).map(x=>[x.url,x]));
+  const gone=prev?prev.filter(x=>!snap.some(y=>y.url===x.url)):[];
+  const nNew=prev?snap.filter(x=>!prevMap.has(x.url)).length:0;
+  const moved=prev?snap.filter(x=>prevMap.has(x.url)&&prevMap.get(x.url).pos!==x.pos).length:0;
+  const selectable=x=>pr.active&&x.cls==='pirate'&&!sent.has(x.url);
+  const rows=snap.map(x=>{
+    const pv=prevMap.get(x.url);let mv='<span class="mv nt">—</span>';
+    if(!prev)mv='<span class="mu">1-й снимок</span>';
+    else if(!pv)mv='<span class="bd bd-new">NEW</span>';
+    else if(pv.pos!==x.pos){const d=pv.pos-x.pos;mv=`<span class="mv ${d>0?(x.cls==='pirate'?'up':'nt'):(x.cls==='pirate'?'dn':'nt')}">${d>0?'▲':'▼'} ${Math.abs(d)}</span>`}
+    const b=sent.has(x.url)?batchOfUrl(pr,x.url):null;
+    return `<tr><td class="keep">${selectable(x)?`<input type="checkbox" data-chg="sel" data-url="${esc(x.url)}" ${S.sel.has(x.url)?'checked':''}>`:''}</td><td><b>${x.pos}</b></td><td>${mv}</td>
+    <td><div><b>${esc(x.title)}</b> ${x.own?'<span class="bd bd-legal">наша страница</span>':''}</div><div class="url">${esc(x.url)}</div></td>
+    <td class="keep">${x.own||!pr.active?badge(x.cls):`<select class="sel" data-chg="verdict" data-url="${esc(x.url)}">${[['pirate','Пират'],['legal','Легально'],['info','Инфо']].map(([v,t])=>`<option value="${v}" ${x.cls===v?'selected':''}>${t}</option>`).join('')}</select>`}</td>
+    <td>${b?`<button class="linkb" data-act="packopen" data-id="${b.id}"><span class="bd bd-pack">в пакете №${b.id}</span></button>`:(x.cls==='pirate'?'<span class="bd bd-pirate">не передан</span>':'')}</td></tr>`}).join('');
+  const li=m?m.li:DAYS-1;
+  return `<div class="card"><div class="ph"><div><h2>Топ-10 выдачи · ${ENG[S.engine]} · Москва</h2><small>Снимок: ${fdl(li)}${pr.active?', 09:00':' (мониторинг остановлен)'} ${prev?` · изменения с прошлого снимка: ${nNew} появилось, ${gone.length} исчезло, ${moved} сместилось`:''}</small></div>
+    ${pr.active?`<div class="frow"><button class="btn sm" data-act="selnew">Отметить все непереданные пиратские</button><button class="btn sm" data-act="serpai" id="serpaibtn" title="DeepSeek расставит вердикты пират/легально/инфо по этому снимку">✨ Классифицировать через DeepSeek</button></div>`:''}</div>
+    <div class="tw"><table><thead><tr><th></th><th>Поз.</th><th>Изменение</th><th>Страница</th><th>Вердикт</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${gone.length?`<div class="note"><b>Исчезли с прошлого снимка:</b> ${gone.map(x=>esc(x.domain)+' (было '+x.pos+')').join(', ')}</div>`:''}
+    <div class="note">Вердикты в прототипе — демо-данные; кнопка «✨ Классифицировать через DeepSeek» заменяет их реальными вердиктами AI (по домену, с сохранением ручной правки). Финальное решение за человеком: вердикт можно изменить в списке — это сразу пересчитывает график.</div></div>
+    <div class="selbar" id="selbar" ${S.sel.size?'':'style="display:none"'}><span id="selcnt"></span><span class="sp"></span><button class="btn sm" data-act="selclear">Сбросить</button><button class="btn pri" data-act="mkpack">Сформировать пакет для юристов</button></div>`;
+}
+const badge=cls=>`<span class="bd bd-${cls}">${{pirate:'Пират',legal:'Легально',info:'Инфо'}[cls]}</span>`;
+
+function packsTable(bs,withProj=true){
+  if(!bs.length)return `<div class="card"><div class="empty">Пакетов для юристов пока нет. Отметьте пиратские страницы на вкладке «Выдача сейчас» и сформируйте пакет.</div></div>`;
+  return `<div class="card"><div class="tw"><table><thead><tr><th>Пакет</th><th>Передан юристам</th>${withProj?'<th>Проект</th>':''}<th>Поисковик</th><th>URL</th><th>Эффект</th><th></th></tr></thead><tbody>${bs.map(b=>{const e=effect(b);return `<tr><td><b>№${b.id}</b></td><td>${fdl(b.day)}</td>${withProj?`<td><button class="linkb" data-act="open" data-id="${b.pid}">${esc(proj(b.pid).name)}</button></td>`:''}<td>${ENG[b.eng]}</td><td>${b.n}</td><td><span class="bd bd-${e.verdict}">${VTXT[e.verdict]}</span></td><td><button class="btn sm" data-act="packopen" data-id="${b.id}">Открыть список и тексты</button></td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+function viewPacks(){
+  chartSpec=null;
+  const bs=S.batches.slice().reverse(),urls=bs.reduce((s,b)=>s+b.n,0);
+  return `<div class="ph"><div><h1>Пакеты жалоб</h1><small>Юристы и отправители в систему не заходят: пакет уходит им списком URL и готовыми текстами. Здесь фиксируем, когда пакет передан.</small></div></div>
+  <div class="kpis"><div class="kpi"><div class="k">Пакетов передано</div><div class="v">${bs.length}</div><div class="s">за всё время</div></div><div class="kpi"><div class="k">URL в пакетах</div><div class="v">${urls}</div><div class="s">считаем как отправленные жалобы</div></div></div>
+  ${packsTable(bs,true)}`;
+}
+
+/* ========= DeepSeek ========= */
+const DS={key:localStorage.getItem('ds_key')||'',model:localStorage.getItem('ds_model')||'deepseek-chat'};
+function updAiBtn(){const b=document.getElementById('aibtn');if(!b)return;b.title=DS.key?'DeepSeek подключён · '+DS.model:'DeepSeek не настроен — кликните, чтобы добавить ключ';b.style.borderColor=DS.key?'var(--leg)':'';b.style.color=DS.key?'var(--leg)':''}
+const DSErr={nokey:'Не задан ключ DeepSeek — откройте «✨ AI» в шапке',auth:'Ключ отклонён (401) — проверьте на platform.deepseek.com',quota:'Баланс DeepSeek исчерпан (402) — пополните аккаунт',network:'Запрос к api.deepseek.com не прошёл. Если это CORS браузера — нужен небольшой сервер-прокси',http:'DeepSeek вернул ошибку HTTP ',abort:'Превышено время ожидания (60 с)',parse:'DeepSeek ответил не-JSON — повторите запрос'};
+function dsErr(e){const k=e&&e.code||'network';return DSErr[k]+(k==='http'?(e.status||'?'):'')}
+async function dsChat(messages,opts={}){
+  if(!DS.key)throw{code:'nokey'};
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),60000);let r;
+  try{r=await fetch('https://api.deepseek.com/chat/completions',{method:'POST',signal:ctl.signal,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+DS.key},
+    body:JSON.stringify({model:opts.model||DS.model,messages,temperature:opts.temperature!=null?opts.temperature:.3,max_tokens:opts.max_tokens||1500,stream:false})});}
+  catch(err){clearTimeout(to);throw{code:err&&err.name==='AbortError'?'abort':'network',err}}
+  clearTimeout(to);
+  if(r.status===401)throw{code:'auth'};
+  if(r.status===402)throw{code:'quota'};
+  if(!r.ok)throw{code:'http',status:r.status};
+  const j=await r.json();
+  const c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;
+  if(!c)throw{code:'parse'};
+  return c;
+}
+function dsGuard(){if(DS.key)return true;toast('Сначала задайте ключ DeepSeek');S.modal={type:'ai'};renderModal();return false}
+
+/* — классификация выдачи — */
+async function aiClassify(){
+  if(!dsGuard())return;
+  const pr=proj(S.pid),e=pr.eng[S.engine];
+  const btn=document.getElementById('serpaibtn');
+  if(btn){btn.disabled=true;btn.textContent='DeepSeek классифицирует…'}
+  try{
+    const uniq=[...new Map(e.snap.filter(x=>!x.own).map(x=>[x.domain,x])).values()];
+    if(!uniq.length){toast('В снимке нет страниц для классификации');return}
+    const sys='Ты — классификатор результатов поисковой выдачи антипиратского сервиса видеостриминга Wink. Для каждого элемента верни метку: "pirate" (незаконное распространение произведения: пиратские онлайн-кинотеатры, «смотреть бесплатно», торренты), "legal" (легальный стриминг и официальные страницы) или "info" (энциклопедии, новости, обзоры — контент О произведении, а не само произведение). Отвечай СТРОГО JSON без пояснений: {"items":[{"domain":"...","cls":"pirate|legal|info","conf":0-100}]}';
+    const usr=JSON.stringify({title:pr.name,original_title:pr.orig,type:pr.type,year:pr.year,own_domain:'wink.ru',known_legal_domains:LEGAL.map(x=>x[0]).concat(INFO.map(x=>x[0])),items:uniq.map(x=>({domain:x.domain,url:x.url,title:x.title}))});
+    const raw=await dsChat([{role:'system',content:sys},{role:'user',content:usr}],{temperature:0,max_tokens:2000});
+    const j=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(!j||!Array.isArray(j.items))throw{code:'parse'};
+    const map=new Map(j.items.map(x=>[x.domain,x]));
+    let n=0;
+    e.snap.forEach(x=>{if(x.own)return;const v=map.get(x.domain);if(v&&['pirate','legal','info'].includes(v.cls)){x.cls=v.cls;x.ai=true;x.conf=Math.round(clamp(+v.conf||0,0,100));n++}});
+    syncToday(pr,S.engine);
+    toast('DeepSeek обновил вердикты: '+n+' позиций. Финальное решение остаётся за человеком');
+    render();
+  }catch(err){toast('❌ '+dsErr(err))}
+  finally{if(btn){btn.disabled=false;btn.textContent='✨ Классифицировать через DeepSeek'}}
+}
+
+/* — текст жалобы — */
+async function aiComplaint(){
+  if(!dsGuard())return;
+  const m=S.modal,d=packData(),it=d.items,rc=m.rcpt;
+  const items=rc.startsWith('h:')?it.filter(x=>hosterOf(x.domain)===rc.slice(2)):it;
+  if(!items.length){toast('Для этого получателя нет подходящих URL');return}
+  const btn=document.getElementById('packaibtn');
+  if(btn){btn.disabled=true;btn.textContent='Генерация…'}
+  try{
+    const who={ya:'поддержка Яндекса — удаление страниц из результатов поиска',g:'Google Legal Support — copyright removal из результатов поиска',rkn:'Роскомнадзор — ограничение доступа к страницам'}[rc]||rc.slice(2)+' — абузная служба хостинга';
+    const sys='Ты — юрист антипиратского отдела видеосервиса Wink. Составь готовый к отправке черновик жалобы. Адресат: '+who+'. Язык: '+(rc==='g'?'английский':'русский')+'. Правила: используй только факты из данных; недостающие реквизиты помечай плейсхолдерами вида [УКАЗАТЬ: …]; не выдумывай номера договоров и судебные акты; структура: Кому / Тема / Правообладатель и основание прав / Произведение / Суть нарушения / Список URL / Просьба / Контакт.';
+    const usr='Произведение: «'+d.pr.name+'»'+(d.pr.orig?' ('+d.pr.orig+')':'')+', '+d.pr.type.toLowerCase()+', '+d.pr.year+'. Поисковик: '+ENG[d.eng]+', регион Москва, топ-10. URL ('+items.length+'):\n'+items.map((x,i)=>(i+1)+'. '+x.url).join('\n');
+    const txt=await dsChat([{role:'system',content:sys},{role:'user',content:usr}],{temperature:.4,max_tokens:1800});
+    m.dsTexts=m.dsTexts||{};m.dsTexts[rc]=txt;
+    const ta=document.getElementById('pk-txt');if(ta)ta.value=txt;
+    toast('Черновик сгенерирован DeepSeek — проверьте плейсхолдеры [УКАЗАТЬ] перед отправкой');
+  }catch(err){toast('❌ '+dsErr(err))}
+  finally{if(btn){btn.disabled=false;btn.textContent='✨ Сгенерировать через DeepSeek'}}
+}
+
+/* — AI-разбор — */
+async function aiDigest(){
+  if(!dsGuard())return;
+  S.modal={type:'aiSum',loading:true,text:''};renderModal();
+  const set=S.view==='project'?[proj(S.pid)]:filtered();
+  const act=set.filter(p=>p.active),rows=act.map(pm).filter(Boolean);
+  const from=DAYS-S.period,ids=new Set(set.map(p=>p.id));
+  const bs=S.batches.filter(b=>ids.has(b.pid)&&b.day>=from);
+  const ef=bs.map(effect).filter(x=>['good','flat','bad'].includes(x.verdict));
+  const tls=act.map(p=>{const m=pm(p);return m?{name:p.name,pirates:m.p+'%',wink_pos:m.pos>10?'вне топ-10':m.pos,new_no_pack:m.nu}:null}).filter(Boolean);
+  const data={engine:ENG[S.engine],period_days:S.period,titles_total:set.length,titles_monitored:act.length,
+    pirate_share_avg:rows.length?Math.round(mean(rows.map(r=>r.p)))+'%':null,
+    wink_pos_avg:rows.length?+mean(rows.map(r=>r.pos)).toFixed(1):null,
+    new_urls_no_pack:rows.reduce((s,r)=>s+r.nu,0),
+    packs_in_period:bs.length,urls_in_packs:bs.reduce((s,b)=>s+b.n,0),
+    packs_with_effect:ef.filter(x=>x.verdict==='good').length,packs_without_effect:ef.filter(x=>x.verdict!=='good').length,
+    titles:tls};
+  try{
+    const sys='Ты — аналитик антипиратского мониторинга видеостриминга. По JSON-сводке дай разбор на 6–9 строк на русском: 1) главное в текущей картине, 2) узкие места (конкретные тайтлы и метрики), 3) 2–3 конкретных действия на неделю. Кратко и по делу, без общих слов.';
+    S.modal.text=await dsChat([{role:'system',content:sys},{role:'user',content:JSON.stringify(data)}],{temperature:.4,max_tokens:1200});
+  }catch(err){S.modal.text='❌ '+dsErr(err)}
+  S.modal.loading=false;renderModal();
+}
+
+/* ========= модальные окна ========= */
+function complaintText(kind,pr,items){
+  const list=items.map((x,i)=>`${i+1}. ${x.url}`).join('\n');
+  const wk=`«${pr.name}»${pr.orig?' ('+pr.orig+')':''}, ${pr.type.toLowerCase()}, ${pr.year}`;
+  const head='[ДЕМО-ШАБЛОН: итоговые формулировки утверждает юрист]\n\n';
+  const own=`Правообладатель / лицензиат: [НАЗВАНИЕ ЮРЛИЦА]\nОснование прав: [ДОГОВОР, РЕКВИЗИТЫ]\nПроизведение: ${wk}\n`;
+  if(kind==='ya')return head+`Кому: Яндекс, обращения о нарушении авторских прав\nТема: Прошу удалить страницы из поисковой выдачи\n\n${own}\nНа указанных страницах без согласия правообладателя размещено произведение либо организован его незаконный просмотр. Прошу ограничить показ этих страниц в результатах поиска.\n\nСписок страниц (${items.length}):\n${list}\n\nКонтакт: [ФИО, e-mail, телефон]`;
+  if(kind==='g')return head+`To: Google LLC, Legal Support (Copyright)\nSubject: Copyright infringement notice — request to remove search results\n\n${own}\nThe pages listed below make the work available without authorization. We request that these URLs be removed from Google Search results.\n\nURLs (${items.length}):\n${list}\n\nI have a good faith belief that the use is not authorized by the copyright owner, its agent, or the law.\nContact: [NAME, e-mail, phone]`;
+  if(kind==='rkn')return head+`Кому: Роскомнадзор\nТема: Заявление о принятии мер по ограничению доступа\n\n${own}Основание: [РЕКВИЗИТЫ СУДЕБНОГО АКТА]\n\nПрошу принять меры по ограничению доступа к страницам:\n${list}`;
+  const h=kind.slice(2);
+  return head+`Кому: ${h} (абузная служба)\nТема: Уведомление о размещении контента с нарушением авторских прав\n\n${own}\nНа ресурсах, размещённых у вас, обнаружены страницы с нарушением прав. Прошу прекратить размещение либо ограничить доступ:\n${list}\n\nКонтакт: [ФИО, e-mail, телефон]`;
+}
+function packData(){
+  const m=S.modal;
+  if(m.mode==='view'){const b=S.batches.find(x=>x.id===m.batchId);return{pr:proj(b.pid),eng:b.eng,items:batchItems(b),batch:b}}
+  return{pr:proj(m.pid),eng:m.eng,items:m.items,batch:null};
+}
+function rcptList(items){
+  const hs=[...new Set(items.map(x=>hosterOf(x.domain)))].sort();
+  return[['ya','Яндекс'],['g','Google']].concat(hs.map(h=>['h:'+h,h+' (абузная служба)'])).concat([['rkn','Роскомнадзор']]);
+}
+function packModal(){
+  const m=S.modal,d=packData(),it=d.items,rc=rcptList(it);
+  if(!rc.some(r=>r[0]===m.rcpt))m.rcpt=d.eng;
+  const body=m.ptab==='urls'
+    ?`<div class="tw"><table><thead><tr><th>#</th><th>URL</th><th>Домен</th><th>Хостинг</th></tr></thead><tbody>${it.map((x,i)=>`<tr><td>${i+1}</td><td class="url" style="font-size:13px">${esc(x.url)}</td><td>${esc(x.domain)}</td><td>${hosterOf(x.domain)}</td></tr>`).join('')}</tbody></table></div><div class="note">Хостер определяется по домену автоматически (в прототипе — условные «Хостер A/B/C»).</div>`
+    :`<div class="frow" style="margin-bottom:10px"><span class="lbl">Кому</span><select class="sel" data-chg="rcpt" style="max-width:none">${rc.map(r=>`<option value="${r[0]}" ${m.rcpt===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select><button class="btn sm pri" data-act="packai" id="packaibtn">✨ Сгенерировать через DeepSeek</button><button class="btn sm" data-act="packcopytxt">Скопировать текст</button></div><textarea class="txt" id="pk-txt" readonly>${esc(m.dsTexts&&m.dsTexts[m.rcpt]?m.dsTexts[m.rcpt]:complaintText(m.rcpt,d.pr,m.rcpt.startsWith('h:')?it.filter(x=>hosterOf(x.domain)===m.rcpt.slice(2)):it))}</textarea>
+    <div class="note">Шаблон слева — заготовка. DeepSeek напишет полный черновик под выбранного получателя; юрист проверяет плейсхолдеры [УКАЗАТЬ] и утверждение формулировок.</div>`;
+  return `<div class="overlay" data-act="closemodal"><div class="modal"><div class="mh"><div><h3>${d.batch?`Пакет №${d.batch.id}`:'Новый пакет для юристов'} · ${esc(d.pr.name)}</h3><small>${it.length} URL · ${ENG[d.eng]} · Москва, топ-10${d.batch?` · передан юристам ${fdl(d.batch.day)}`:''}</small></div><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb"><div class="tabs" style="margin-bottom:12px"><button class="${m.ptab==='urls'?'on':''}" data-act="ptab" data-v="urls">Список страниц</button><button class="${m.ptab==='texts'?'on':''}" data-act="ptab" data-v="texts">Готовые тексты жалоб</button></div>${body}</div>
+  <div class="mf"><button class="btn" data-act="packcopy">Скопировать список</button><button class="btn" data-act="packdl">Скачать .txt</button>${d.batch?`<button class="btn pri" data-act="closemodal">Готово</button>`:`<button class="btn pri" data-act="packsend">Передать юристам</button>`}</div></div></div>`;
+}
+function addModal(){
+  const a=S.modal;
+  if(a.step===1)return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(560px,100%)"><div class="mh"><h3>Добавить тайтл в мониторинг</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb"><label class="lbl" for="kpurl">Ссылка на тайтл на Кинопоиске</label><input id="kpurl" class="inp" style="margin-top:6px" placeholder="https://www.kinopoisk.ru/series/5012345/" value="${esc(a.url)}" autocomplete="off">
+  <div class="err" id="kperr">${a.err||''}</div><div class="hint">Это единственное поле. По ссылке определим тайтл, год и альтернативные названия. Регион (Москва) и глубина (топ-10) заданы по умолчанию.</div>
+  <div class="ex">Для демо: <a data-act="fillex" data-v="https://www.kinopoisk.ru/series/6100001/">сериал</a><a data-act="fillex" data-v="https://www.kinopoisk.ru/film/6100002/">фильм</a><a data-act="fillex" data-v="https://www.kinopoisk.ru/series/6100003/">ещё сериал</a></div></div>
+  <div class="mf"><button class="btn" data-act="closemodal">Отмена</button><button class="btn pri" data-act="addparse">Определить тайтл</button></div></div></div>`;
+  const f=a.found,pr={slug:f.slug,name:f.name};
+  return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(600px,100%)"><div class="mh"><h3>Проверьте, что тайтл определён верно</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb"><div class="found">${poster(pr,'')}<div style="flex:1"><h2 style="font-size:18px">${esc(f.name)}</h2><small>${esc(f.orig)} · ${f.type} · ${f.year}</small>
+  <dl class="kv"><dt>Ссылка</dt><dd style="word-break:break-all">${esc(f.url)}</dd><dt>Альтернативные названия</dt><dd>${f.alts.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</dd><dt>Регион</dt><dd>Москва</dd><dt>Глубина выдачи</dt><dd>Топ-10</dd><dt>Поисковики</dt><dd>Яндекс, Google</dd><dt>Первый снимок</dt><dd>сразу после добавления, далее ежедневно в 09:00</dd></dl></div></div></div>
+  <div class="mf"><button class="btn" data-act="addback">Назад</button><button class="btn pri" data-act="addgo">Начать мониторинг</button></div></div></div>`;
+}
+function catsModal(){
+  return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(520px,100%)"><div class="mh"><h3>Категории тайтлов</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb">${S.cats.map(c=>`<div class="catrow"><i style="width:10px;height:10px;border-radius:50%;background:${catColor(c.id)}"></i><input class="inp" value="${esc(c.name)}" data-chg="catname" data-id="${c.id}"><small style="min-width:70px">${S.projects.filter(p=>p.cat===c.id).length} ${pl(S.projects.filter(p=>p.cat===c.id).length,['тайтл','тайтла','тайтлов'])}</small><button class="btn sm" data-act="catdel" data-id="${c.id}">Удалить</button></div>`).join('')}
+  <div class="catrow" style="margin-top:14px"><input class="inp" id="newcat" placeholder="Новая категория, например «Эксклюзивы»"><button class="btn pri sm" data-act="catadd">Добавить</button></div>
+  <div class="hint">Категории задаёте вы. Удаление категории не удаляет тайтлы — они попадают в «Без категории».</div></div>
+  <div class="mf"><button class="btn pri" data-act="closemodal">Готово</button></div></div></div>`;
+}
+function aiModal(){
+  const m=S.modal;
+  const st=m.testing?'<div class="hint">⏳ Проверяем связь с api.deepseek.com…</div>'
+    :m.status==='ok'?'<div class="hint" style="color:var(--leg);font-weight:600">✅ Модель ответила: «'+esc(m.reply)+'»</div>'
+    :m.status==='err'?'<div class="hint" style="color:var(--pir);font-weight:600">❌ '+esc(m.reply)+'</div>':'';
+  return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(560px,100%)"><div class="mh"><h3>✨ DeepSeek — AI-помощник радара</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb">
+    <div class="hint" style="margin:0 0 12px">DeepSeek берёт на себя три задачи: <b>вердикты выдачи</b> (пират / легально / инфо — решение всегда можно поменять), <b>черновики жалоб</b> по пакетам и <b>AI-разбор</b> картины на дашборде. Без ключа всё работает в демо-режиме.</div>
+    <label class="lbl" for="dsk">API-ключ DeepSeek</label>
+    <input id="dsk" class="inp" style="margin:6px 0 12px" type="password" placeholder="sk-…" value="${esc(DS.key)}" autocomplete="off">
+    <label class="lbl" for="dsm">Модель</label>
+    <select id="dsm" class="sel" style="margin:6px 0 4px;max-width:none;width:100%">
+      <option value="deepseek-chat" ${DS.model==='deepseek-chat'?'selected':''}>deepseek-chat — быстрая и дешёвая, для всех задач</option>
+      <option value="deepseek-reasoner" ${DS.model==='deepseek-reasoner'?'selected':''}>deepseek-reasoner — с рассуждениями, точнее, но медленнее и дороже</option>
+    </select>
+    ${st}
+    <div class="hint" style="margin-top:10px">Ключ хранится только в этом браузере (localStorage) и уходит напрямую в api.deepseek.com — больше никуда. Получить: platform.deepseek.com → API Keys.</div>
+  </div>
+  <div class="mf"><button class="btn" data-act="aitest">Проверить связь</button><button class="btn pri" data-act="aisave">Сохранить</button></div></div></div>`;
+}
+function aiSumModal(){
+  const m=S.modal;
+  return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(680px,100%)"><div class="mh"><h3>✨ AI-разбор · ${S.view==='project'?esc(proj(S.pid).name):'дашборд'} · ${ENG[S.engine]}</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb">${m.loading?'<div class="hint" style="font-size:14px">⏳ DeepSeek анализирует сводку — до минуты…</div>':'<textarea class="txt" readonly>'+esc(m.text)+'</textarea>'}</div>
+  <div class="mf">${m.loading?'':'<button class="btn" data-act="aizcopy">Скопировать</button>'}<button class="btn pri" data-act="closemodal">Закрыть</button></div></div></div>`;
+}
+async function aiTest(){
+  const k=($('#dsk')?$('#dsk').value:DS.key).trim(),mo=$('#dsm')?$('#dsm').value:DS.model;
+  const backup={key:DS.key,model:DS.model};DS.key=k;DS.model=mo;
+  const m=S.modal;m.testing=true;m.status='';renderModal();
+  try{const r=await dsChat([{role:'user',content:'Ответь ровно одним словом: pong'}],{max_tokens:8,temperature:0});m.status='ok';m.reply=(r||'').trim().slice(0,40)}
+  catch(e){m.status='err';m.reply=dsErr(e)}
+  Object.assign(DS,backup);m.testing=false;renderModal();
+}
+function renderModal(){
+  const el=$('#modal');
+  el.innerHTML=!S.modal?'':S.modal.type==='pack'?packModal():S.modal.type==='add'?addModal():S.modal.type==='ai'?aiModal():S.modal.type==='aiSum'?aiSumModal():catsModal();
+  if(S.modal&&S.modal.type==='add'&&S.modal.step===1){const i=$('#kpurl');if(i)i.focus()}
+}
+
+/* ========= действия ========= */
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),3200)}
+function render(){
+  chartSpec=null;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',(S.view==='packs')===(b.dataset.v==='packs')));
+  $('#app').innerHTML=S.view==='dash'?viewDash():S.view==='project'?viewProject():viewPacks();
+  drawChart();updateSelBar();renderModal();
+}
+function updateSelBar(){const b=$('#selbar');if(!b)return;b.style.display=S.sel.size?'':'none';const c=$('#selcnt');if(c)c.innerHTML=`Выбрано пиратских страниц: <b>${S.sel.size}</b>`}
+function openProject(id){S.view='project';S.pid=id;S.tab='overview';S.sel=new Set();S.modal=null;render();window.scrollTo(0,0)}
+function syncToday(pr,ek){const e=pr.eng[ek],c=countSnap(e.snap);e.p[DAYS-1]=c.p;e.i[DAYS-1]=c.i;e.pos[DAYS-1]=c.pos}
+function setActive(pr,on){
+  pr.active=on;
+  if(on){['ya','g'].forEach(ek=>syncToday(pr,ek));toast(`Мониторинг «${pr.name}» включён. Первый снимок получен, дальше — ежедневно в 09:00`)}
+  else toast(`Мониторинг «${pr.name}» выключен. Накопленная история сохранена`);
+}
+function parseKp(){
+  const a=S.modal,url=($('#kpurl')?$('#kpurl').value:a.url).trim();a.url=url;
+  const m=url.match(/kinopoisk\.ru\/(film|series)\/(\d+)/i);
+  if(!m){a.err='Это не похоже на ссылку Кинопоиска. Нужен адрес вида kinopoisk.ru/film/123 или kinopoisk.ru/series/123';renderModal();return}
+  const kp=+m[2],type=m[1].toLowerCase()==='film'?'Фильм':'Сериал',ex=S.projects.find(p=>String(p.kp)===String(kp));
+  if(ex){a.err=`Этот тайтл уже в мониторинге: «${esc(ex.name)}». <a style="color:var(--ac);cursor:pointer;text-decoration:underline" data-act="open" data-id="${ex.id}">Открыть</a>`;renderModal();return}
+  const used=new Set(S.projects.map(p=>p.name));let t=null;
+  for(let k=0;k<NEWT.length;k++){const c=NEWT[(kp+k)%NEWT.length];if(!used.has(c.name)){t=c;break}}
+  if(!t)t={name:'Тайтл '+kp,orig:'',year:2026,type,slug:'title-'+kp,alts:['Тайтл '+kp+' смотреть онлайн']};
+  a.found=Object.assign({},t,{type,kp,url:`https://www.kinopoisk.ru/${m[1].toLowerCase()}/${kp}/`});a.step=2;a.err='';renderModal();
+}
+function createProject(f){
+  const seed=Math.floor(Math.random()*9000)+100;
+  const pr={id:'n'+Date.now(),name:f.name,orig:f.orig,slug:f.slug,year:f.year,type:f.type,kp:f.kp,kpUrl:f.url,cat:null,active:true,seed,cfg:{},bd:[],eng:{}};
+  ['ya','g'].forEach(ek=>{
+    const rng=mulberry32(seed+(ek==='g'?5:0));
+    const p=ek==='g'?1+Math.floor(rng()*3):2+Math.floor(rng()*3),i=1+Math.floor(rng()*2),pos=2+Math.floor(rng()*4);
+    const A=()=>Array(DAYS).fill(null),P=A(),I=A(),Q=A();P[DAYS-1]=p;I[DAYS-1]=i;Q[DAYS-1]=pos;
+    pr.eng[ek]={p:P,i:I,pos:Q,snap:makeSnap(pr,ek,p,i,pos,DAYS-1),prev:null};
+  });
+  S.projects.unshift(pr);return pr;
+}
+function copyText(t,msg){
+  const done=()=>toast(msg);
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,()=>fallback())}else fallback();
+  function fallback(){const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove();done()}
+}
+function download(){
+  const d=packData(),it=d.items;
+  let t=`ПАКЕТ ДЛЯ ЖАЛОБ · ${d.pr.name}\nПоисковик: ${ENG[d.eng]} · Регион: Москва · Топ-10\n${d.batch?'Передан юристам: '+fd(dayDate(d.batch.day)):'Сформирован: '+fd(dayDate(DAYS-1))}\n\nСПИСОК СТРАНИЦ (${it.length})\n${it.map((x,i)=>`${i+1}. ${x.url}`).join('\n')}\n`;
+  rcptList(it).forEach(([k,n])=>{t+=`\n\n==== ${n} ====\n${complaintText(k,d.pr,k.startsWith('h:')?it.filter(x=>hosterOf(x.domain)===k.slice(2)):it)}`});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));a.download=`pack-${d.pr.slug}.txt`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');
+  if(!t){const row=e.target.closest('tr[data-open]');if(row&&!e.target.closest('select,label,input,button,a'))openProject(row.dataset.open);return}
+  const a=t.dataset.act,v=t.dataset.v,id=t.dataset.id;
+  if(a==='closemodal'&&t.classList.contains('overlay')&&e.target!==t)return;
+  switch(a){
+    case 'closemodal':S.modal=null;renderModal();break;
+    case 'nav':S.view=v;S.modal=null;render();window.scrollTo(0,0);break;
+    case 'back':S.view='dash';S.sel=new Set();render();break;
+    case 'open':S.modal=null;openProject(id);break;
+    case 'eng':S.engine=v;S.sel=new Set();render();break;
+    case 'per':S.period=+v;render();break;
+    case 'cat':if(v==='all')S.catF.clear();else if(S.catF.has(v))S.catF.delete(v);else S.catF.add(v);render();break;
+    case 'vis':S.vis[v]=!S.vis[v];render();break;
+    case 'tab':S.tab=v;render();break;
+    case 'enable':setActive(proj(id),true);render();break;
+    case 'addopen':S.modal={type:'add',step:1,url:'',err:'',found:null};renderModal();break;
+    case 'fillex':S.modal.url=v;S.modal.err='';renderModal();break;
+    case 'addparse':parseKp();break;
+    case 'addback':S.modal.step=1;renderModal();break;
+    case 'addgo':{const pr=createProject(S.modal.found);S.modal=null;toast(`«${pr.name}» добавлен. Первый снимок выдачи Яндекса и Google получен`);openProject(pr.id);break}
+    case 'catsmgr':S.modal={type:'cats'};renderModal();break;
+    case 'catadd':{const i=$('#newcat'),n=i.value.trim();if(!n){toast('Введите название категории');break}S.cats.push({id:'c'+Date.now(),name:n});render();toast('Категория добавлена');break}
+    case 'catdel':{S.projects.forEach(p=>{if(p.cat===id)p.cat=null});S.cats=S.cats.filter(c=>c.id!==id);S.catF.delete(id);render();break}
+    case 'selnew':{const pr=proj(S.pid),sent=sentSet(pr);pr.eng[S.engine].snap.forEach(x=>{if(x.cls==='pirate'&&!sent.has(x.url))S.sel.add(x.url)});render();break}
+    case 'selclear':S.sel=new Set();render();break;
+    case 'mkpack':{
+      const pr=proj(S.pid);if(!S.sel.size){toast('Отметьте страницы в списке');break}
+      const items=pr.eng[S.engine].snap.filter(x=>S.sel.has(x.url)).map(x=>({url:x.url,domain:x.domain,pos:x.pos}));
+      S.modal={type:'pack',mode:'draft',pid:pr.id,eng:S.engine,items,ptab:'urls',rcpt:S.engine};renderModal();break}
+    case 'packopen':S.modal={type:'pack',mode:'view',batchId:+id,ptab:'urls',rcpt:'ya'};renderModal();break;
+    case 'ptab':S.modal.ptab=v;renderModal();break;
+    case 'packcopy':copyText(packData().items.map(x=>x.url).join('\n'),'Список страниц скопирован');break;
+    case 'packcopytxt':{const x=$('#pk-txt');if(x)copyText(x.value,'Текст жалобы скопирован');break}
+    case 'packdl':download();break;
+    case 'aiopen':S.modal={type:'ai',testing:false,status:''};renderModal();break;
+    case 'aisave':{DS.key=($('#dsk')?$('#dsk').value:'').trim();DS.model=$('#dsm')?$('#dsm').value:DS.model;localStorage.setItem('ds_key',DS.key);localStorage.setItem('ds_model',DS.model);updAiBtn();S.modal=null;renderModal();toast(DS.key?'Ключ DeepSeek сохранён':'Ключ удалён — AI-функции вернулись в демо-режим');break}
+    case 'aitest':aiTest();break;
+    case 'serpai':aiClassify();break;
+    case 'packai':aiComplaint();break;
+    case 'aidigest':aiDigest();break;
+    case 'aizcopy':copyText(S.modal.text||'','AI-разбор скопирован');break;
+    case 'packsend':{
+      const m=S.modal,pr=proj(m.pid),b={id:S.nextBatch++,pid:pr.id,day:DAYS-1,n:m.items.length,urls:m.items.map(x=>x.url),items:m.items,eng:m.eng};
+      S.batches.push(b);S.sel=new Set();S.modal={type:'pack',mode:'view',batchId:b.id,ptab:'urls',rcpt:m.eng};render();
+      toast(`Пакет №${b.id} передан юристам · на графике появился флажок за сегодня`);break}
+  }
+});
+document.addEventListener('change',e=>{
+  const t=e.target.closest('[data-chg]');if(!t)return;const c=t.dataset.chg,id=t.dataset.id;
+  switch(c){
+    case 'cat':proj(id).cat=t.value||null;render();toast('Категория изменена');break;
+    case 'toggle':setActive(proj(id),t.checked);render();break;
+    case 'scope':S.scope=t.value;render();break;
+    case 'sort':S.sort=t.value;render();break;
+    case 'onlyactive':S.onlyActive=t.checked;render();break;
+    case 'verdict':{const pr=proj(S.pid),x=pr.eng[S.engine].snap.find(y=>y.url===t.dataset.url);x.cls=t.value;if(t.value!=='pirate')S.sel.delete(x.url);syncToday(pr,S.engine);render();toast('Вердикт изменён — график пересчитан');break}
+    case 'sel':if(t.checked)S.sel.add(t.dataset.url);else S.sel.delete(t.dataset.url);updateSelBar();break;
+    case 'rcpt':S.modal.rcpt=t.value;renderModal();break;
+    case 'catname':{const cat=S.cats.find(x=>x.id===id),n=t.value.trim();if(n){cat.name=n;render()}break}
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&S.modal){S.modal=null;renderModal()}
+  if(e.key==='Enter'&&e.target.id==='kpurl')parseKp();
+  if(e.key==='Enter'&&e.target.id==='newcat'){const b=document.querySelector('[data-act="catadd"]');if(b)b.click()}
+});
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(drawChart,120)});
+render();
+updAiBtn();
+window.__S=S;
+})();
+</script>
+</body>
+</html>
