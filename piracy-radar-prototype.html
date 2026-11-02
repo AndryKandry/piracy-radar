@@ -42,7 +42,6 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 80px}
 .chip{border:1px solid var(--line);background:var(--card);padding:4px 11px;border-radius:99px;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px}
 .chip.on{background:var(--ac-bg);border-color:var(--ac);color:var(--ac)}
 .chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
-.fixed{font-size:12.5px;background:var(--inf-bg);padding:4px 10px;border-radius:8px;color:var(--mu)}
 .chk{display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(176px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--sh)}
@@ -129,6 +128,32 @@ textarea.txt{width:100%;min-height:290px;font:12.5px/1.5 ui-monospace,Menlo,Cons
 .toast.show{opacity:1;transform:translateX(-50%)}
 .catrow{display:flex;gap:10px;align-items:center;margin-bottom:8px}
 .catrow .inp{flex:1}
+/* — разгрузка UI — */
+.toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
+.kline{font-size:13px;color:var(--mu);margin:-6px 0 16px;display:flex;gap:6px 18px;flex-wrap:wrap;align-items:center}
+.kline b{color:var(--tx)}
+.attn{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);padding:14px 16px;margin-bottom:16px}
+.attn h2{font-size:15px;margin-bottom:6px}
+.attnrow{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.attnrow:last-child{border:0;padding-bottom:2px}
+.acc{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.acch{width:100%;display:flex;align-items:center;gap:10px;background:none;border:0;padding:10px 14px;cursor:pointer;font:inherit;font-weight:700;text-align:left;color:inherit}
+.acch:hover{background:var(--ac-bg)}
+.acch .cv{margin-left:auto;transition:.15s;color:var(--mu)}
+.acc.open .acch .cv{transform:rotate(90deg)}
+.accbody{display:none;padding:0 14px 12px}
+.acc.open .accbody{display:block}
+tr.grp>td{background:var(--bg);font-weight:700;cursor:pointer;padding:7px 10px;color:var(--mu);user-select:none;letter-spacing:.02em}
+tr.grp>td:hover{color:var(--tx)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.minikpi{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:13px;color:var(--mu);margin:2px 0 14px}
+.minikpi b{color:var(--tx)}
+.rowdet>td{background:var(--bg)}
+.chev{cursor:pointer;color:var(--mu);border:0;background:none;font-size:13px;padding:4px 6px;border-radius:6px}
+.chev:hover{background:var(--ac-bg);color:var(--ac)}
+.sersum{display:flex;gap:8px 14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:13px;color:var(--mu)}
+.sersum b{color:var(--tx)}
+#hdrseg{margin-left:6px}
 @media(max-width:760px){main{padding:14px 12px 80px}.top{padding:10px 12px;gap:10px;flex-wrap:wrap}.kv{grid-template-columns:1fr}}
 </style>
 </head>
@@ -139,6 +164,7 @@ textarea.txt{width:100%;min-height:290px;font:12.5px/1.5 ui-monospace,Menlo,Cons
     <button data-act="nav" data-v="dash" class="on">Дашборд</button>
     <button data-act="nav" data-v="packs">Пакеты жалоб</button>
   </nav>
+  <div class="seg" id="hdrseg"><button data-act="eng" data-v="ya" class="on">Яндекс</button><button data-act="eng" data-v="g">Google</button></div>
   <div class="sp"></div>
   <span class="demo">Прототип · демо-данные</span>
   <button class="btn" data-act="aiopen" id="aibtn">✨ AI</button>
@@ -256,7 +282,8 @@ const S={view:'dash',pid:null,tab:'overview',engine:'ya',period:30,
   cats:[{id:'orig',name:'Ориги Wink'},{id:'aa',name:'A / A+ тайтлы'},{id:'lib',name:'Библиотека'}],
   catF:new Set(),onlyActive:false,scope:'all',sort:'pirate',
   vis:{pirate:true,legal:true,info:true,pos:true,flags:true},
-  sel:new Set(),projects:[],batches:[],nextBatch:1,modal:null};
+  sel:new Set(),projects:[],batches:[],nextBatch:1,modal:null,
+  aiSuggest:false,ui:{effOpen:false,serpGroups:{new:true,sent:false,rest:false},expRow:null,layers:false,firstRun:null}};
 S.projects=TITLES.map(buildProject);
 (function(){let all=[];S.projects.forEach(pr=>{all=all.concat(mkBatches(pr))});all.sort((a,b)=>a.day-b.day||a.pid.localeCompare(b.pid));all.forEach((b,i)=>b.id=i+1);S.batches=all;S.nextBatch=all.length+1})();
 
@@ -373,26 +400,58 @@ function drawChart(){
 const seg=(act,opts,cur)=>`<div class="seg">${opts.map(o=>`<button class="${String(o.v)===String(cur)?'on':''}" data-act="${act}" data-v="${o.v}">${o.t}</button>`).join('')}</div>`;
 const dfmt=(d,unit)=>{if(d==null)return '<span class="mu">нет данных для сравнения</span>';const r=Math.round(d*10)/10;if(Math.abs(r)<.05)return '<span class="mu">без изменений</span>';const up=r>0;return `<span class="${up?'neg':'pos'}">${up?'▲':'▼'} ${Math.abs(r)}${unit}</span>`};
 function legendHTML(){
-  const L=[['pirate','var(--pir)','Пиратская'],['legal','var(--leg)','Легальная'],['info','var(--inf)','Информационная (новости, обзоры, вики)'],['pos','var(--pos)','Позиция Wink'],['flags','var(--flag)','Передача пакета юристам']];
+  const L=[['pirate','var(--pir)','Пиратская'],['legal','var(--leg)','Легальная'],['info','var(--inf)','Информационная']];
   return `<div class="legend">${L.map(([k,c,t])=>`<button class="lg ${S.vis[k]?'':'off'}" data-act="vis" data-v="${k}"><i style="background:${c}"></i>${t}</button>`).join('')}</div>`;
 }
-function kpiHTML(set){
+function layersHTML(fp){
+  if(!S.ui.layers)return '';
+  return `<div style="border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:12px"><div class="frow">
+   <label class="chk"><input type="checkbox" data-chg="vischk" data-v="pos" ${S.vis.pos?'checked':''}> Линия позиции Wink</label>
+   <label class="chk"><input type="checkbox" data-chg="vischk" data-v="flags" ${S.vis.flags?'checked':''}> ⚑ Флажки передач юристам</label>
+   ${fp?`<span class="lbl">Область</span><select class="sel" data-chg="scope"><option value="all">Все проекты (по фильтру)</option>${fp.map(p=>`<option value="${p.id}" ${S.scope===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`:''}
+  </div><div class="hint" style="margin:0">Регион Москва · топ-10 · снимок раз в сутки в 09:00 — фиксированные параметры сервиса.</div></div>`;
+}
+function minikpiHTML(pr){
+  const m=pm(pr);if(!m)return '';
+  return `<div class="minikpi"><span>Пираты <b style="color:var(--pir)">${m.p}%</b> ${dfmt(m.dp,' п.п.')}</span><span>Позиция Wink <b>${m.pos>10?'вне топ-10':m.pos}</b></span><span>Новых без пакета <b>${m.nu}</b></span><span>Передано юристам <b>${m.sentN}</b> URL</span></div>`;
+}
+function kpiCalc(set){
   const act=set.filter(p=>p.active),base=act.length?act:set,rows=base.map(pm).filter(Boolean);
   const m=a=>a.length?mean(a):null;
-  const P=m(rows.map(r=>r.p)),L=m(rows.map(r=>r.l)),I=m(rows.map(r=>r.i));
-  const dP=m(rows.filter(r=>r.dp!=null).map(r=>r.dp)),pos=m(rows.map(r=>r.pos)),dpos=m(rows.filter(r=>r.dpos!=null).map(r=>r.dpos));
   const from=DAYS-S.period,ids=new Set(set.map(p=>p.id)),bs=S.batches.filter(b=>ids.has(b.pid)&&b.day>=from);
-  const urls=bs.reduce((s,b)=>s+b.n,0),ef=bs.map(effect).filter(x=>['good','flat','bad'].includes(x.verdict)),good=ef.filter(x=>x.verdict==='good').length;
-  const nu=act.map(pm).filter(Boolean).reduce((s,r)=>s+r.nu,0);
-  const card=(k,v,s,c='')=>`<div class="kpi ${c}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const ef=bs.map(effect).filter(x=>['good','flat','bad'].includes(x.verdict));
+  return{act,rows,P:m(rows.map(r=>r.p)),L:m(rows.map(r=>r.l)),I:m(rows.map(r=>r.i)),
+    dP:m(rows.filter(r=>r.dp!=null).map(r=>r.dp)),pos:m(rows.map(r=>r.pos)),dpos:m(rows.filter(r=>r.dpos!=null).map(r=>r.dpos)),
+    nu:act.map(pm).filter(Boolean).reduce((s,r)=>s+r.nu,0),bs,urls:bs.reduce((s,b)=>s+b.n,0),
+    good:ef.filter(x=>x.verdict==='good').length,efN:ef.length};
+}
+function kpiPrimaryHTML(set){
+  const c=kpiCalc(set),card=(k,v,s,cl='')=>`<div class="kpi ${cl}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="kpis">
-   ${card('На мониторинге',`${act.length} <small style="font-size:15px;font-weight:600">из ${set.length}</small>`,'остальные на паузе')}
-   ${card('Пиратская выдача',P==null?'—':`<span style="color:var(--pir)">${Math.round(P)}%</span>`,`${dfmt(dP,' п.п.')} к прошлому снимку<br>легальная ${L==null?'—':Math.round(L)}% · инфо ${I==null?'—':Math.round(I)}%`)}
-   ${card('Позиция Wink',pos==null?'—':(pos>=10.5?'вне':pos.toFixed(1).replace('.0','')),`${dfmt(dpos,'')} к прошлому снимку`)}
-   ${card('Новых без пакета',nu,'пиратских URL, ещё не переданных юристам',nu?'warn':'')}
-   ${card('Жалоб отправлено',urls,`${bs.length} ${pl(bs.length,['пакет','пакета','пакетов'])} за ${S.period} дн.<br>считаем URL из переданных юристам пакетов`)}
-   ${card('Пакеты с эффектом',ef.length?`${good} <small style="font-size:15px;font-weight:600">из ${ef.length}</small>`:'—','сравнение «до / после» по пиратской выдаче')}
+   ${card('Пиратская выдача',c.P==null?'—':`<span style="color:var(--pir)">${Math.round(c.P)}%</span>`,`${dfmt(c.dP,' п.п.')} к прошлому снимку · легальная ${c.L==null?'—':Math.round(c.L)}% · инфо ${c.I==null?'—':Math.round(c.I)}%`)}
+   ${card('Новых без пакета',c.nu,'пиратских URL, ждут жалобы',c.nu?'warn':'')}
+   ${card('Позиция Wink',c.pos==null?'—':(c.pos>=10.5?'вне топ-10':c.pos.toFixed(1).replace('.0','')),`${dfmt(c.dpos,'')} к прошлому снимку`)}
   </div>`;
+}
+function kpiSecondaryHTML(set){
+  const c=kpiCalc(set);
+  return `<div class="kline">
+   <span>На мониторинге <b>${c.act.length} из ${set.length}</b></span>
+   <span>Передано <b>${c.bs.length} ${pl(c.bs.length,['пакет','пакета','пакетов'])}</b> (${c.urls} URL) за ${S.period} дн.</span>
+   ${c.efN?`<span>С эффектом <b>${c.good} из ${c.efN}</b></span>`:''}
+   <button class="linkb" style="color:var(--ac)" data-act="nav" data-v="packs">Все пакеты →</button>
+  </div>`;
+}
+function attnHTML(fp){
+  const rows=fp.map(pr=>({pr,m:pm(pr)})).filter(r=>r.m&&r.pr.active&&r.m.nu>0).sort((a,b)=>b.m.nu-a.m.nu).slice(0,3);
+  if(!rows.length)return '';
+  return `<div class="attn"><h2>⚠️ Требует внимания</h2>${rows.map(({pr,m})=>`
+    <div class="attnrow">${poster(pr)}<div style="flex:1;min-width:160px"><b>${esc(pr.name)}</b> <small class="mu">· пиратов ${m.p}% · новых без пакета ${m.nu}</small></div><button class="btn sm pri" data-act="openrp" data-id="${pr.id}">Разобрать выдачу →</button></div>`).join('')}</div>`;
+}
+function effSummaryHTML(set){
+  const ids=new Set(set.map(p=>p.id)),from=DAYS-S.period;
+  const ef=S.batches.filter(b=>ids.has(b.pid)&&b.day>=from).map(effect).filter(x=>['good','flat','bad'].includes(x.verdict));
+  return ef.length?`${ef.filter(x=>x.verdict==='good').length} из ${ef.length} с заметным эффектом`:'пакетов в периоде пока нет';
 }
 function effectHTML(set,limit){
   const ids=new Set(set.map(p=>p.id)),from=DAYS-S.period;
@@ -417,35 +476,43 @@ function viewDash(){
   const sorters={pirate:(a,b)=>(b.m?b.m.p:-1)-(a.m?a.m.p:-1),nu:(a,b)=>(b.m?b.m.nu:-1)-(a.m?a.m.nu:-1),sent:(a,b)=>(b.m?b.m.sentN:0)-(a.m?a.m.sentN:0),name:(a,b)=>a.pr.name.localeCompare(b.pr.name,'ru')};
   rows.sort((a,b)=>(b.pr.active-a.pr.active)||sorters[S.sort](a,b));
   const catSel=pr=>`<select class="sel" data-chg="cat" data-id="${pr.id}"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${pr.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`;
-  const tbl=rows.length?`<div class="tw"><table><thead><tr><th>Тайтл</th><th>Категория</th><th>Мониторинг</th><th>Выдача: пираты · легальная · инфо</th><th>Позиция Wink</th><th>Пираты, Δ</th><th>Новых без пакета</th><th>Жалоб отправлено</th><th>Последний снимок</th></tr></thead><tbody>${rows.map(({pr,m})=>`<tr data-open="${pr.id}" class="${pr.active?'':'off'}">
-    <td><div class="ttl">${poster(pr)}<div><button class="linkb" data-act="open" data-id="${pr.id}">${esc(pr.name)}</button><small>${pr.type} · ${pr.year}</small></div></div></td>
-    <td class="keep">${catSel(pr)}</td>
-    <td class="keep"><label class="switch"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label> <small>${pr.active?'идёт':'пауза'}</small></td>
-    <td>${m?`<div class="sbar"><i style="width:${m.p}%;background:var(--pir)"></i><i style="width:${m.l}%;background:var(--leg)"></i><i style="width:${m.i}%;background:var(--inf)"></i></div><div class="sn"><b style="color:var(--pir)">${m.p}%</b> · ${m.l}% · ${m.i}%</div>`:'—'}</td>
-    <td>${m?(m.pos>10?'вне топ-10':m.pos):'—'}</td>
+  const th=(k,t)=>`<th data-act="sortcol" data-v="${k}" title="Сортировать" style="cursor:pointer">${t}${S.sort===k?' ▾':''}</th>`;
+  const tbl=rows.length?`<div class="tw"><table><thead><tr>${th('name','Тайтл')}<th>Мониторинг</th>${th('pirate','Выдача')}<th>Позиция</th><th>Δ пиратов</th>${th('nu','Новых без пакета')}<th></th></tr></thead><tbody>${rows.map(({pr,m})=>{
+    const nb=S.batches.filter(b=>b.pid===pr.id).length;
+    const det=S.ui.expRow===pr.id?`<tr class="rowdet"><td colspan="7"><div class="frow" style="padding:4px 0">
+      <span class="lbl">Категория</span>${catSel(pr)}
+      <span class="lbl">Снимок</span><small>${m?(pr.active?'сегодня, 09:00':fdi(m.li)+' (остановлен)'):'—'}</small>
+      <span class="lbl">Передано юристам</span><small>${m?m.sentN+' URL в '+nb+' '+pl(nb,['пакете','пакетах','пакетах']):'—'}</small>
+      <a href="${esc(kpUrl(pr))}" target="_blank" rel="noopener" style="color:var(--ac)">Кинопоиск ↗</a></div></td></tr>`:'';
+    return `<tr data-open="${pr.id}" class="${pr.active?'':'off'}">
+    <td><div class="ttl">${poster(pr)}<div><button class="linkb" data-act="open" data-id="${pr.id}">${esc(pr.name)}</button> <span class="dot" style="background:${catColor(pr.cat||'none')}" title="${esc(catName(pr))}"></span><small title="${esc(catName(pr))} · снимок: ${m?(pr.active?'сегодня, 09:00':fdi(m.li)):'—'}">${pr.type} · ${pr.year}</small></div></div></td>
+    <td class="keep"><label class="switch" title="${pr.active?'Мониторинг идёт':'Мониторинг на паузе'}"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label></td>
+    <td>${m?`<div class="sbar" title="легальная ${m.l}% · инфо ${m.i}%"><i style="width:${m.p}%;background:var(--pir)"></i><i style="width:${m.l}%;background:var(--leg)"></i><i style="width:${m.i}%;background:var(--inf)"></i></div><div class="sn"><b style="color:var(--pir)">${m.p}%</b></div>`:'—'}</td>
+    <td>${m?(m.pos>10?'<small class="mu">вне топ-10</small>':m.pos):'—'}</td>
     <td>${m&&pr.active?dfmt(m.dp,' п.п.'):'<span class="mu">—</span>'}</td>
-    <td>${m&&pr.active?(m.nu?`<span class="bd bd-pirate">${m.nu}</span>`:'<span class="mu">0</span>'):'<span class="mu">—</span>'}</td>
-    <td>${m?m.sentN:0}</td>
-    <td>${m?(pr.active?'сегодня 09:00':'<small>'+fdi(m.li)+' (остановлен)</small>'):'—'}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">Нет проектов по выбранным фильтрам</div>`;
+    <td>${m&&pr.active?(m.nu?`<button class="linkb" data-act="openrp" data-id="${pr.id}" title="Разобрать выдачу"><span class="bd bd-pirate">${m.nu}</span></button>`:'<span class="mu">0</span>'):'<span class="mu">—</span>'}</td>
+    <td class="keep"><button class="chev" data-act="exprow" data-id="${pr.id}" title="Детали">${det?'▾':'▸'}</button></td></tr>${det}`}).join('')}</tbody></table></div>`:`<div class="empty">Нет проектов по выбранным фильтрам</div>`;
   return `
   <div class="ph"><div><h1>Дашборд мониторинга</h1><small>Агрегированная картина по всем тайтлам. Юристы сюда не заходят: им уходят списки страниц и готовые тексты.</small></div><div class="frow"><button class="btn sm" data-act="aidigest" title="DeepSeek разберёт сводку и предложит действия">✨ AI-разбор</button></div></div>
-  <div class="card filters">
-    <div class="frow"><span class="lbl">Поисковик</span>${seg('eng',[{v:'ya',t:'Яндекс'},{v:'g',t:'Google'}],S.engine)}</div>
-    <div class="frow"><span class="lbl">Период</span>${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div>
-    <div class="frow"><span class="lbl">Категории</span>${chips}<button class="btn sm ghost" data-act="catsmgr">⚙ Управлять</button></div>
+  <div class="toolbar">
+    <div class="frow">${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div>
+    <div class="frow">${chips}<button class="btn sm ghost" data-act="catsmgr" title="Управлять категориями">⚙</button></div>
     <label class="chk"><input type="checkbox" data-chg="onlyactive" ${S.onlyActive?'checked':''}> Только на мониторинге</label>
-    <span class="fixed" title="Фиксированные параметры сервиса">🔒 Регион: Москва · Топ-10</span>
   </div>
-  ${kpiHTML(set)}
+  ${kpiPrimaryHTML(set)}
+  ${kpiSecondaryHTML(set)}
+  ${attnHTML(fp)}
   <div class="card">
-    <div class="ph"><div><h2>Структура выдачи: пиратская / легальная / информационная</h2><small>${S.scope==='all'?`Среднее по проектам: ${set.length}`:esc(set[0]?set[0].name:'')} · ${ENG[S.engine]} · Москва, топ-10</small></div>
-      <div class="frow"><span class="lbl">Показать</span><select class="sel" data-chg="scope"><option value="all">Все проекты (по фильтру)</option>${fp.map(p=>`<option value="${p.id}" ${S.scope===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div></div>
+    <div class="ph"><div><h2>Структура выдачи</h2><small>${S.scope==='all'?`среднее по ${set.length} ${pl(set.length,['проекту','проектам','проектам'])}`:esc(set[0]?set[0].name:'')} · ${ENG[S.engine]} · Москва, топ-10</small></div>
+      <div class="frow"><button class="btn sm ghost" data-act="layers">Слои ⋯</button></div></div>
+    ${layersHTML(fp)}
     ${set.length?legendHTML()+'<div id="chartwrap"></div>':'<div class="empty">Нет данных для графика</div>'}
-    <div class="note">⚑ Флажок — дата передачи пакета юристам (число — URL в пакете). Линия — позиция Wink в топ-10 (1 — выше всего). Наведите на график, чтобы увидеть значения за день.</div>
+    <div class="note">Наведите на график — значения за день. Линию позиции Wink и ⚑ флажки передач включает «Слои ⋯».</div>
   </div>
-  <div class="card"><div class="ph"><div><h2>Есть ли эффект от передачи пакетов юристам</h2><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div></div>${effectHTML(set,6)}<div class="note">${EFFNOTE}</div></div>
+  <div class="acc ${S.ui.effOpen?'open':''}"><button class="acch" data-act="acc" data-v="eff">Эффект от передач юристам <small class="mu" style="font-weight:400">— ${effSummaryHTML(set)}</small><span class="cv">▸</span></button>
+    <div class="accbody"><div class="ph" style="margin-top:8px"><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div>${effectHTML(set,6)}<div class="note">${EFFNOTE}</div></div></div>
   <div class="card"><div class="ph"><h2>Проекты (${rows.length})</h2><div class="frow"><span class="lbl">Сортировка</span><select class="sel" data-chg="sort">${[['pirate','По доле пиратов'],['nu','По новым без пакета'],['sent','По жалобам'],['name','По названию']].map(([v,t])=>`<option value="${v}" ${S.sort===v?'selected':''}>${t}</option>`).join('')}</select></div></div>${tbl}
-  <div class="note">Тумблер включает и выключает мониторинг тайтла: для оригиналов его включают на время релиза серий. Клик по строке открывает страницу тайтла.</div></div>`;
+  <div class="note">Тумблер — пауза мониторинга тайтла (оригиналы включают на время релизов). Клик по строке — страница тайтла, ▸ — детали, сортировка — кликом по заголовку.</div></div>`;
 }
 
 function viewProject(){
@@ -453,18 +520,19 @@ function viewProject(){
   chartSpec={prs:[pr]};
   const m=pm(pr),e=pr.eng[S.engine];
   const head=`<div class="pagehead"><button class="btn ghost" data-act="back">← Все проекты</button></div>
-  <div class="ph"><div class="ttl">${poster(pr,'')}<div><h1>${esc(pr.name)}</h1><small>${esc(pr.orig||'')} · ${pr.type} · ${pr.year} · <a href="${esc(kpUrl(pr))}" target="_blank" rel="noopener" style="color:var(--ac)">Кинопоиск ↗</a></small></div></div>
-    <div class="frow"><span class="lbl">Категория</span><select class="sel" data-chg="cat" data-id="${pr.id}"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${pr.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
-    <span class="lbl" style="margin-left:10px">Мониторинг</span><label class="switch"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label></div></div>
+  <div class="ph"><div class="ttl">${poster(pr,'')}<div><h1>${esc(pr.name)}</h1><small>${esc(pr.orig||'')} · ${pr.type} · ${pr.year} · <span class="dot" style="background:${catColor(pr.cat||'none')}"></span> ${esc(catName(pr))}</small></div></div>
+    <div class="frow"><span class="lbl">Мониторинг</span><label class="switch" title="${pr.active?'Мониторинг идёт':'Мониторинг на паузе'}"><input type="checkbox" data-chg="toggle" data-id="${pr.id}" ${pr.active?'checked':''}><i></i></label>
+    <button class="btn sm" data-act="ttlmenu" data-id="${pr.id}">⚙ Настройки</button></div></div>
   ${pr.active?'':`<div class="banner"><span><b>Мониторинг выключен.</b> Данные не собираются${m?', последний снимок от '+fdi(m.li):''}. Для оригиналов его включают на время релиза серий.</span><button class="btn sm pri" data-act="enable" data-id="${pr.id}">Включить мониторинг</button></div>`}
-  <div class="card filters"><div class="frow"><span class="lbl">Поисковик</span>${seg('eng',[{v:'ya',t:'Яндекс'},{v:'g',t:'Google'}],S.engine)}</div>
-    <div class="frow"><span class="lbl">Период</span>${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div><span class="fixed">🔒 Регион: Москва · Топ-10</span></div>
-  ${kpiHTML([pr])}
-  <div class="tabs">${[['overview','Динамика'],['serp','Выдача сейчас'],['packs','Пакеты для юристов']].map(([v,t])=>`<button class="${S.tab===v?'on':''}" data-act="tab" data-v="${v}">${t}${v==='packs'?' ('+S.batches.filter(b=>b.pid===pr.id).length+')':''}</button>`).join('')}</div>`;
-  if(S.tab==='overview')return head+`<div class="card"><div class="ph"><div><h2>Структура выдачи по тайтлу</h2><small>${ENG[S.engine]} · Москва, топ-10</small></div><div class="frow"><button class="btn sm" data-act="aidigest" title="DeepSeek разберёт динамику тайтла">✨ AI-разбор</button></div></div>${legendHTML()}<div id="chartwrap"></div>
+  ${minikpiHTML(pr)}
+  <div class="tabs">${[['overview','Динамика'],['serp','Выдача'],['packs','Пакеты']].map(([v,t])=>`<button class="${S.tab===v?'on':''}" data-act="tab" data-v="${v}">${t}${v==='packs'?' ('+S.batches.filter(b=>b.pid===pr.id).length+')':''}</button>`).join('')}</div>`;
+  if(S.tab==='overview')return head+`<div class="toolbar"><div class="frow">${seg('per',[{v:7,t:'7 дн.'},{v:14,t:'14 дн.'},{v:30,t:'30 дн.'}],S.period)}</div><small class="mu">${ENG[S.engine]} · Москва, топ-10</small></div>
+  <div class="card"><div class="ph"><div><h2>Структура выдачи по тайтлу</h2></div><div class="frow"><button class="btn sm ghost" data-act="layers">Слои ⋯</button><button class="btn sm" data-act="aidigest" title="DeepSeek разберёт динамику тайтла">✨ AI-разбор</button></div></div>
+    ${layersHTML(null)}${legendHTML()}<div id="chartwrap"></div>
     ${m&&m.li===DAYS-1&&lastIdx(e.p.slice(0,DAYS-1))<0?'<div class="note">Первый снимок получен сегодня — история будет накапливаться по одному снимку в день.</div>':''}
-    <div class="note">⚑ Флажок — дата передачи пакета юристам. Линия — позиция Wink.</div></div>
-    <div class="card"><div class="ph"><div><h2>Эффект от передачи пакетов</h2><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div></div>${effectHTML([pr],0)}<div class="note">${EFFNOTE}</div></div>`;
+    <div class="note">Наведите на график — значения за день. Линию позиции и ⚑ флажки включает «Слои ⋯».</div></div>
+  <div class="acc ${S.ui.effOpen?'open':''}"><button class="acch" data-act="acc" data-v="eff">Эффект от передач юристам <small class="mu" style="font-weight:400">— ${effSummaryHTML([pr])}</small><span class="cv">▸</span></button>
+    <div class="accbody"><div class="ph" style="margin-top:8px"><small>Пиратская выдача за 3 дня до передачи и на 3–5 день после</small></div>${effectHTML([pr],0)}<div class="note">${EFFNOTE}</div></div></div>`;
   if(S.tab==='serp')return head+serpHTML(pr);
   return head+packsTable(S.batches.filter(b=>b.pid===pr.id).slice().reverse(),false);
 }
@@ -474,9 +542,8 @@ function serpHTML(pr){
   const prevMap=new Map((prev||[]).map(x=>[x.url,x]));
   const gone=prev?prev.filter(x=>!snap.some(y=>y.url===x.url)):[];
   const nNew=prev?snap.filter(x=>!prevMap.has(x.url)).length:0;
-  const moved=prev?snap.filter(x=>prevMap.has(x.url)&&prevMap.get(x.url).pos!==x.pos).length:0;
   const selectable=x=>pr.active&&x.cls==='pirate'&&!sent.has(x.url);
-  const rows=snap.map(x=>{
+  const rowHTML=x=>{
     const pv=prevMap.get(x.url);let mv='<span class="mv nt">—</span>';
     if(!prev)mv='<span class="mu">1-й снимок</span>';
     else if(!pv)mv='<span class="bd bd-new">NEW</span>';
@@ -485,13 +552,29 @@ function serpHTML(pr){
     return `<tr><td class="keep">${selectable(x)?`<input type="checkbox" data-chg="sel" data-url="${esc(x.url)}" ${S.sel.has(x.url)?'checked':''}>`:''}</td><td><b>${x.pos}</b></td><td>${mv}</td>
     <td><div><b>${esc(x.title)}</b> ${x.own?'<span class="bd bd-legal">наша страница</span>':''}</div><div class="url">${esc(x.url)}</div></td>
     <td class="keep">${x.own||!pr.active?badge(x.cls):`<select class="sel" data-chg="verdict" data-url="${esc(x.url)}">${[['pirate','Пират'],['legal','Легально'],['info','Инфо']].map(([v,t])=>`<option value="${v}" ${x.cls===v?'selected':''}>${t}</option>`).join('')}</select>`}</td>
-    <td>${b?`<button class="linkb" data-act="packopen" data-id="${b.id}"><span class="bd bd-pack">в пакете №${b.id}</span></button>`:(x.cls==='pirate'?'<span class="bd bd-pirate">не передан</span>':'')}</td></tr>`}).join('');
+    <td>${b?`<button class="linkb" data-act="packopen" data-id="${b.id}"><span class="bd bd-pack">в пакете №${b.id}</span></button>`:(x.cls==='pirate'?'<span class="bd bd-pirate">не передан</span>':'')}</td></tr>`};
+  const moved=prev?snap.filter(x=>prevMap.has(x.url)&&prevMap.get(x.url).pos!==x.pos).length:0;
+  const own=snap.filter(x=>x.own);
+  const pirNew=snap.filter(x=>x.cls==='pirate'&&!sent.has(x.url)&&!x.own);
+  const pirSent=snap.filter(x=>x.cls==='pirate'&&sent.has(x.url)&&!x.own);
+  const rest=snap.filter(x=>!x.own&&x.cls!=='pirate');
+  const grp=(key,label,arr,extra='')=>arr.length?`<tr class="grp"><td colspan="6" data-act="grp" data-v="${key}">${S.ui.serpGroups[key]===false?'▸':'▾'} ${label} · ${arr.length}${extra}</td></tr>${S.ui.serpGroups[key]===false?'':arr.map(rowHTML).join('')}`:'';
   const li=m?m.li:DAYS-1;
-  return `<div class="card"><div class="ph"><div><h2>Топ-10 выдачи · ${ENG[S.engine]} · Москва</h2><small>Снимок: ${fdl(li)}${pr.active?', 09:00':' (мониторинг остановлен)'} ${prev?` · изменения с прошлого снимка: ${nNew} появилось, ${gone.length} исчезло, ${moved} сместилось`:''}</small></div>
-    ${pr.active?`<div class="frow"><button class="btn sm" data-act="selnew">Отметить все непереданные пиратские</button><button class="btn sm" data-act="serpai" id="serpaibtn" title="DeepSeek расставит вердикты пират/легально/инфо по этому снимку">✨ Классифицировать через DeepSeek</button></div>`:''}</div>
-    <div class="tw"><table><thead><tr><th></th><th>Поз.</th><th>Изменение</th><th>Страница</th><th>Вердикт</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div>
-    ${gone.length?`<div class="note"><b>Исчезли с прошлого снимка:</b> ${gone.map(x=>esc(x.domain)+' (было '+x.pos+')').join(', ')}</div>`:''}
-    <div class="note">Вердикты в прототипе — демо-данные; кнопка «✨ Классифицировать через DeepSeek» заменяет их реальными вердиктами AI (по домену, с сохранением ручной правки). Финальное решение за человеком: вердикт можно изменить в списке — это сразу пересчитывает график.</div></div>
+  return `${S.ui.firstRun===pr.id?'<div class="banner"><span><b>Первый снимок готов.</b> Классифицируйте выдачу — дальше пиратские URL собираются в пакет для юристов.</span></div>':''}
+  <div class="card"><div class="ph"><div><h2>Топ-10 выдачи · ${ENG[S.engine]} · Москва</h2>
+    <div class="sersum" style="margin:4px 0 0"><b>Снимок: ${fdl(li)}${pr.active?', 09:00':' (мониторинг остановлен)'}</b>
+    <span>пиратских <b>${pirNew.length+pirSent.length}</b>${nNew?` · <span style="color:var(--ac)">+${nNew} NEW</span>`:''}</span>
+    <span>не переданы <b>${pirNew.length}</b></span><span>легальных и инфо <b>${rest.length}</b></span>
+    ${prev?`<span>сместилось <b>${moved}</b></span>`:''}
+    ${gone.length?`<span title="Исчезли с прошлого снимка: ${esc(gone.map(x=>x.domain+' (было '+x.pos+')').join(', '))}">${gone.length} ${pl(gone.length,['исчезла','исчезло','исчезли'])} ⓘ</span>`:''}</div></div>
+    ${pr.active?`<div class="frow"><button class="btn sm" data-act="serpai" id="serpaibtn" title="DeepSeek расставит вердикты пират/легально/инфо по этому снимку и предложит пиратские к передаче">✨ Классифицировать через DeepSeek</button></div>`:''}</div>
+    <div class="tw"><table><thead><tr><th></th><th>Поз.</th><th>Изменение</th><th>Страница</th><th>Вердикт</th><th>Статус</th></tr></thead><tbody>
+    ${own.length?`<tr class="grp"><td colspan="6">★ Наша страница · ${own.length}</td></tr>${own.map(rowHTML).join('')}`:''}
+    ${grp('new','🏴 Пиратские · не переданы',pirNew,pr.active?'<button class="btn sm ghost" data-act="selgrp" style="margin-left:10px;font-weight:600">Выбрать все</button>':'')}
+    ${grp('sent','📦 Пиратские · уже в пакетах',pirSent)}
+    ${grp('rest','✅ Легальные и информационные',rest)}
+    </tbody></table></div>
+    <div class="note">Вердикты — демо-данные; «✨ Классифицировать» заменяет их вердиктами DeepSeek (по домену). Финальное решение за человеком: вердикт меняется в списке и сразу пересчитывает график.</div></div>
     <div class="selbar" id="selbar" ${S.sel.size?'':'style="display:none"'}><span id="selcnt"></span><span class="sp"></span><button class="btn sm" data-act="selclear">Сбросить</button><button class="btn pri" data-act="mkpack">Сформировать пакет для юристов</button></div>`;
 }
 const badge=cls=>`<span class="bd bd-${cls}">${{pirate:'Пират',legal:'Легально',info:'Инфо'}[cls]}</span>`;
@@ -549,7 +632,10 @@ async function aiClassify(){
     let n=0;
     e.snap.forEach(x=>{if(x.own)return;const v=map.get(x.domain);if(v&&['pirate','legal','info'].includes(v.cls)){x.cls=v.cls;x.ai=true;x.conf=Math.round(clamp(+v.conf||0,0,100));n++}});
     syncToday(pr,S.engine);
-    toast('DeepSeek обновил вердикты: '+n+' позиций. Финальное решение остаётся за человеком');
+    const sent=sentSet(pr);
+    S.sel=new Set(e.snap.filter(x=>x.cls==='pirate'&&!sent.has(x.url)&&!x.own).map(x=>x.url));
+    S.aiSuggest=true;S.ui.firstRun=null;
+    toast('DeepSeek обновил вердикты ('+n+' позиций) и предложил '+S.sel.size+' пиратских к передаче — проверьте и сформируйте пакет');
     render();
   }catch(err){toast('❌ '+dsErr(err))}
   finally{if(btn){btn.disabled=false;btn.textContent='✨ Классифицировать через DeepSeek'}}
@@ -623,13 +709,16 @@ function rcptList(items){
 function packModal(){
   const m=S.modal,d=packData(),it=d.items,rc=rcptList(it);
   if(!rc.some(r=>r[0]===m.rcpt))m.rcpt=d.eng;
-  const body=m.ptab==='urls'
-    ?`<div class="tw"><table><thead><tr><th>#</th><th>URL</th><th>Домен</th><th>Хостинг</th></tr></thead><tbody>${it.map((x,i)=>`<tr><td>${i+1}</td><td class="url" style="font-size:13px">${esc(x.url)}</td><td>${esc(x.domain)}</td><td>${hosterOf(x.domain)}</td></tr>`).join('')}</tbody></table></div><div class="note">Хостер определяется по домену автоматически (в прототипе — условные «Хостер A/B/C»).</div>`
-    :`<div class="frow" style="margin-bottom:10px"><span class="lbl">Кому</span><select class="sel" data-chg="rcpt" style="max-width:none">${rc.map(r=>`<option value="${r[0]}" ${m.rcpt===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select><button class="btn sm pri" data-act="packai" id="packaibtn">✨ Сгенерировать через DeepSeek</button><button class="btn sm" data-act="packcopytxt">Скопировать текст</button></div><textarea class="txt" id="pk-txt" readonly>${esc(m.dsTexts&&m.dsTexts[m.rcpt]?m.dsTexts[m.rcpt]:complaintText(m.rcpt,d.pr,m.rcpt.startsWith('h:')?it.filter(x=>hosterOf(x.domain)===m.rcpt.slice(2)):it))}</textarea>
-    <div class="note">Шаблон слева — заготовка. DeepSeek напишет полный черновик под выбранного получателя; юрист проверяет плейсхолдеры [УКАЗАТЬ] и утверждение формулировок.</div>`;
+  const body=`<div class="frow" style="margin-bottom:10px"><span class="lbl">Кому</span><select class="sel" data-chg="rcpt" style="max-width:none">${rc.map(r=>`<option value="${r[0]}" ${m.rcpt===r[0]?'selected':''}>${r[1]}</option>`).join('')}</select><button class="btn sm pri" data-act="packai" id="packaibtn">✨ Сгенерировать через DeepSeek</button><button class="btn sm" data-act="packcopytxt">Скопировать текст</button></div>
+  <textarea class="txt" id="pk-txt" readonly>${esc(m.dsTexts&&m.dsTexts[m.rcpt]?m.dsTexts[m.rcpt]:complaintText(m.rcpt,d.pr,m.rcpt.startsWith('h:')?it.filter(x=>hosterOf(x.domain)===m.rcpt.slice(2)):it))}</textarea>
+  <div class="note">Шаблон — заготовка; DeepSeek пишет полный черновик под выбранного получателя. Юрист проверяет плейсхолдеры [УКАЗАТЬ] и утверждает формулировки.</div>
+  <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">Список страниц (${it.length})</summary>
+    <div class="tw" style="margin-top:8px"><table><thead><tr><th>#</th><th>URL</th><th>Домен</th><th>Хостинг</th></tr></thead><tbody>${it.map((x,i)=>`<tr><td>${i+1}</td><td class="url" style="font-size:13px">${esc(x.url)}</td><td>${esc(x.domain)}</td><td>${hosterOf(x.domain)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="frow" style="margin-top:8px"><button class="btn sm" data-act="packcopy">Скопировать список</button></div>
+    <div class="note">Хостер определяется по домену автоматически (в прототипе — условные «Хостер A/B/C»).</div></details>`;
   return `<div class="overlay" data-act="closemodal"><div class="modal"><div class="mh"><div><h3>${d.batch?`Пакет №${d.batch.id}`:'Новый пакет для юристов'} · ${esc(d.pr.name)}</h3><small>${it.length} URL · ${ENG[d.eng]} · Москва, топ-10${d.batch?` · передан юристам ${fdl(d.batch.day)}`:''}</small></div><button class="x" data-act="closemodal">×</button></div>
-  <div class="mb"><div class="tabs" style="margin-bottom:12px"><button class="${m.ptab==='urls'?'on':''}" data-act="ptab" data-v="urls">Список страниц</button><button class="${m.ptab==='texts'?'on':''}" data-act="ptab" data-v="texts">Готовые тексты жалоб</button></div>${body}</div>
-  <div class="mf"><button class="btn" data-act="packcopy">Скопировать список</button><button class="btn" data-act="packdl">Скачать .txt</button>${d.batch?`<button class="btn pri" data-act="closemodal">Готово</button>`:`<button class="btn pri" data-act="packsend">Передать юристам</button>`}</div></div></div>`;
+  <div class="mb">${body}</div>
+  <div class="mf"><button class="btn" data-act="packdl">Скачать .txt</button>${d.batch?`<button class="btn pri" data-act="closemodal">Готово</button>`:`<button class="btn pri" data-act="packsend">Передать юристам</button>`}</div></div></div>`;
 }
 function addModal(){
   const a=S.modal;
@@ -641,8 +730,19 @@ function addModal(){
   const f=a.found,pr={slug:f.slug,name:f.name};
   return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(600px,100%)"><div class="mh"><h3>Проверьте, что тайтл определён верно</h3><button class="x" data-act="closemodal">×</button></div>
   <div class="mb"><div class="found">${poster(pr,'')}<div style="flex:1"><h2 style="font-size:18px">${esc(f.name)}</h2><small>${esc(f.orig)} · ${f.type} · ${f.year}</small>
-  <dl class="kv"><dt>Ссылка</dt><dd style="word-break:break-all">${esc(f.url)}</dd><dt>Альтернативные названия</dt><dd>${f.alts.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</dd><dt>Регион</dt><dd>Москва</dd><dt>Глубина выдачи</dt><dd>Топ-10</dd><dt>Поисковики</dt><dd>Яндекс, Google</dd><dt>Первый снимок</dt><dd>сразу после добавления, далее ежедневно в 09:00</dd></dl></div></div></div>
+  <dl class="kv"><dt>Ссылка</dt><dd style="word-break:break-all">${esc(f.url)}</dd><dt>Альтернативные названия</dt><dd>${f.alts.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</dd><dt>Категория</dt><dd><select class="sel" data-chg="addcat"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${S.modal.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></dd><dt>Регион</dt><dd>Москва</dd><dt>Глубина выдачи</dt><dd>Топ-10</dd><dt>Поисковики</dt><dd>Яндекс, Google</dd><dt>Первый снимок</dt><dd>сразу после добавления, далее ежедневно в 09:00</dd></dl></div></div></div>
   <div class="mf"><button class="btn" data-act="addback">Назад</button><button class="btn pri" data-act="addgo">Начать мониторинг</button></div></div></div>`;
+}
+function ttlModal(){
+  const pr=proj(S.modal.pid);
+  return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(460px,100%)"><div class="mh"><h3>⚙ Настройки тайтла</h3><button class="x" data-act="closemodal">×</button></div>
+  <div class="mb">
+    <label class="lbl" for="ttlcat">Категория</label>
+    <select id="ttlcat" class="sel" style="margin:6px 0 14px;max-width:none;width:100%" data-chg="cat" data-id="${pr.id}"><option value="">Без категории</option>${S.cats.map(c=>`<option value="${c.id}" ${pr.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <dl class="kv"><dt>Кинопоиск</dt><dd><a href="${esc(kpUrl(pr))}" target="_blank" rel="noopener" style="color:var(--ac)">${esc(kpUrl(pr))} ↗</a></dd><dt>Категории</dt><dd><button class="linkb" style="color:var(--ac)" data-act="catsmgr">Управлять категориями →</button></dd></dl>
+    <div class="hint">Мониторинг переключается тумблером в шапке тайтла. Регион Москва и топ-10 — фиксированные параметры сервиса.</div>
+  </div>
+  <div class="mf"><button class="btn pri" data-act="closemodal">Готово</button></div></div></div>`;
 }
 function catsModal(){
   return `<div class="overlay" data-act="closemodal"><div class="modal" style="width:min(520px,100%)"><div class="mh"><h3>Категории тайтлов</h3><button class="x" data-act="closemodal">×</button></div>
@@ -687,7 +787,7 @@ async function aiTest(){
 }
 function renderModal(){
   const el=$('#modal');
-  el.innerHTML=!S.modal?'':S.modal.type==='pack'?packModal():S.modal.type==='add'?addModal():S.modal.type==='ai'?aiModal():S.modal.type==='aiSum'?aiSumModal():catsModal();
+  el.innerHTML=!S.modal?'':S.modal.type==='pack'?packModal():S.modal.type==='add'?addModal():S.modal.type==='ai'?aiModal():S.modal.type==='aiSum'?aiSumModal():S.modal.type==='ttl'?ttlModal():catsModal();
   if(S.modal&&S.modal.type==='add'&&S.modal.step===1){const i=$('#kpurl');if(i)i.focus()}
 }
 
@@ -696,11 +796,12 @@ function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show')
 function render(){
   chartSpec=null;
   document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',(S.view==='packs')===(b.dataset.v==='packs')));
+  document.querySelectorAll('#hdrseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.engine));
   $('#app').innerHTML=S.view==='dash'?viewDash():S.view==='project'?viewProject():viewPacks();
   drawChart();updateSelBar();renderModal();
 }
-function updateSelBar(){const b=$('#selbar');if(!b)return;b.style.display=S.sel.size?'':'none';const c=$('#selcnt');if(c)c.innerHTML=`Выбрано пиратских страниц: <b>${S.sel.size}</b>`}
-function openProject(id){S.view='project';S.pid=id;S.tab='overview';S.sel=new Set();S.modal=null;render();window.scrollTo(0,0)}
+function updateSelBar(){const b=$('#selbar');if(!b)return;b.style.display=S.sel.size?'':'none';const c=$('#selcnt');if(c)c.innerHTML=`${S.aiSuggest?'<b style="color:var(--ac)">Предложено AI</b> — проверьте · выбрано пиратских страниц':'Выбрано пиратских страниц'}: <b>${S.sel.size}</b>`}
+function openProject(id,tab){S.view='project';S.pid=id;S.tab=tab||'overview';S.sel=new Set();S.modal=null;S.aiSuggest=false;render();window.scrollTo(0,0)}
 function syncToday(pr,ek){const e=pr.eng[ek],c=countSnap(e.snap);e.p[DAYS-1]=c.p;e.i[DAYS-1]=c.i;e.pos[DAYS-1]=c.pos}
 function setActive(pr,on){
   pr.active=on;
@@ -718,9 +819,9 @@ function parseKp(){
   if(!t)t={name:'Тайтл '+kp,orig:'',year:2026,type,slug:'title-'+kp,alts:['Тайтл '+kp+' смотреть онлайн']};
   a.found=Object.assign({},t,{type,kp,url:`https://www.kinopoisk.ru/${m[1].toLowerCase()}/${kp}/`});a.step=2;a.err='';renderModal();
 }
-function createProject(f){
+function createProject(f,cat){
   const seed=Math.floor(Math.random()*9000)+100;
-  const pr={id:'n'+Date.now(),name:f.name,orig:f.orig,slug:f.slug,year:f.year,type:f.type,kp:f.kp,kpUrl:f.url,cat:null,active:true,seed,cfg:{},bd:[],eng:{}};
+  const pr={id:'n'+Date.now(),name:f.name,orig:f.orig,slug:f.slug,year:f.year,type:f.type,kp:f.kp,kpUrl:f.url,cat:cat||null,active:true,seed,cfg:{},bd:[],eng:{}};
   ['ya','g'].forEach(ek=>{
     const rng=mulberry32(seed+(ek==='g'?5:0));
     const p=ek==='g'?1+Math.floor(rng()*3):2+Math.floor(rng()*3),i=1+Math.floor(rng()*2),pos=2+Math.floor(rng()*4);
@@ -751,7 +852,14 @@ document.addEventListener('click',e=>{
     case 'nav':S.view=v;S.modal=null;render();window.scrollTo(0,0);break;
     case 'back':S.view='dash';S.sel=new Set();render();break;
     case 'open':S.modal=null;openProject(id);break;
-    case 'eng':S.engine=v;S.sel=new Set();render();break;
+    case 'openrp':S.modal=null;openProject(id,'serp');break;
+    case 'sortcol':S.sort=v;render();break;
+    case 'grp':S.ui.serpGroups[v]=S.ui.serpGroups[v]===false;render();break;
+    case 'acc':if(v==='eff')S.ui.effOpen=!S.ui.effOpen;render();break;
+    case 'layers':S.ui.layers=!S.ui.layers;render();break;
+    case 'exprow':S.ui.expRow=S.ui.expRow===id?null:id;render();break;
+    case 'ttlmenu':S.modal={type:'ttl',pid:id};renderModal();break;
+    case 'eng':S.engine=v;S.sel=new Set();S.aiSuggest=false;render();toast('Показаны данные: '+ENG[S.engine]);break;
     case 'per':S.period=+v;render();break;
     case 'cat':if(v==='all')S.catF.clear();else if(S.catF.has(v))S.catF.delete(v);else S.catF.add(v);render();break;
     case 'vis':S.vis[v]=!S.vis[v];render();break;
@@ -761,18 +869,17 @@ document.addEventListener('click',e=>{
     case 'fillex':S.modal.url=v;S.modal.err='';renderModal();break;
     case 'addparse':parseKp();break;
     case 'addback':S.modal.step=1;renderModal();break;
-    case 'addgo':{const pr=createProject(S.modal.found);S.modal=null;toast(`«${pr.name}» добавлен. Первый снимок выдачи Яндекса и Google получен`);openProject(pr.id);break}
+    case 'addgo':{const pr=createProject(S.modal.found,S.modal.cat||null);S.modal=null;S.ui.firstRun=pr.id;toast(`«${pr.name}» добавлен. Первый снимок выдачи Яндекса и Google получен`);openProject(pr.id,'serp');break}
     case 'catsmgr':S.modal={type:'cats'};renderModal();break;
     case 'catadd':{const i=$('#newcat'),n=i.value.trim();if(!n){toast('Введите название категории');break}S.cats.push({id:'c'+Date.now(),name:n});render();toast('Категория добавлена');break}
     case 'catdel':{S.projects.forEach(p=>{if(p.cat===id)p.cat=null});S.cats=S.cats.filter(c=>c.id!==id);S.catF.delete(id);render();break}
-    case 'selnew':{const pr=proj(S.pid),sent=sentSet(pr);pr.eng[S.engine].snap.forEach(x=>{if(x.cls==='pirate'&&!sent.has(x.url))S.sel.add(x.url)});render();break}
-    case 'selclear':S.sel=new Set();render();break;
+    case 'selnew':case 'selgrp':{const pr=proj(S.pid),sent=sentSet(pr);pr.eng[S.engine].snap.forEach(x=>{if(x.cls==='pirate'&&!sent.has(x.url))S.sel.add(x.url)});render();break}
+    case 'selclear':S.sel=new Set();S.aiSuggest=false;render();break;
     case 'mkpack':{
       const pr=proj(S.pid);if(!S.sel.size){toast('Отметьте страницы в списке');break}
       const items=pr.eng[S.engine].snap.filter(x=>S.sel.has(x.url)).map(x=>({url:x.url,domain:x.domain,pos:x.pos}));
-      S.modal={type:'pack',mode:'draft',pid:pr.id,eng:S.engine,items,ptab:'urls',rcpt:S.engine};renderModal();break}
-    case 'packopen':S.modal={type:'pack',mode:'view',batchId:+id,ptab:'urls',rcpt:'ya'};renderModal();break;
-    case 'ptab':S.modal.ptab=v;renderModal();break;
+      S.modal={type:'pack',mode:'draft',pid:pr.id,eng:S.engine,items,rcpt:S.engine};renderModal();break}
+    case 'packopen':S.modal={type:'pack',mode:'view',batchId:+id,rcpt:'ya'};renderModal();break;
     case 'packcopy':copyText(packData().items.map(x=>x.url).join('\n'),'Список страниц скопирован');break;
     case 'packcopytxt':{const x=$('#pk-txt');if(x)copyText(x.value,'Текст жалобы скопирован');break}
     case 'packdl':download();break;
@@ -785,7 +892,7 @@ document.addEventListener('click',e=>{
     case 'aizcopy':copyText(S.modal.text||'','AI-разбор скопирован');break;
     case 'packsend':{
       const m=S.modal,pr=proj(m.pid),b={id:S.nextBatch++,pid:pr.id,day:DAYS-1,n:m.items.length,urls:m.items.map(x=>x.url),items:m.items,eng:m.eng};
-      S.batches.push(b);S.sel=new Set();S.modal={type:'pack',mode:'view',batchId:b.id,ptab:'urls',rcpt:m.eng};render();
+      S.batches.push(b);S.sel=new Set();S.aiSuggest=false;S.modal={type:'pack',mode:'view',batchId:b.id,rcpt:m.eng};render();
       toast(`Пакет №${b.id} передан юристам · на графике появился флажок за сегодня`);break}
   }
 });
@@ -797,8 +904,10 @@ document.addEventListener('change',e=>{
     case 'scope':S.scope=t.value;render();break;
     case 'sort':S.sort=t.value;render();break;
     case 'onlyactive':S.onlyActive=t.checked;render();break;
+    case 'addcat':S.modal.cat=t.value;break;
+    case 'vischk':S.vis[t.dataset.v]=t.checked;render();break;
     case 'verdict':{const pr=proj(S.pid),x=pr.eng[S.engine].snap.find(y=>y.url===t.dataset.url);x.cls=t.value;if(t.value!=='pirate')S.sel.delete(x.url);syncToday(pr,S.engine);render();toast('Вердикт изменён — график пересчитан');break}
-    case 'sel':if(t.checked)S.sel.add(t.dataset.url);else S.sel.delete(t.dataset.url);updateSelBar();break;
+    case 'sel':if(t.checked)S.sel.add(t.dataset.url);else{S.sel.delete(t.dataset.url);S.aiSuggest=false}updateSelBar();break;
     case 'rcpt':S.modal.rcpt=t.value;renderModal();break;
     case 'catname':{const cat=S.cats.find(x=>x.id===id),n=t.value.trim();if(n){cat.name=n;render()}break}
   }
